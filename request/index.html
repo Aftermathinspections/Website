@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Request an Inspection | Aftermath Inspection Services</title>
+<meta name="description" content="Request a private provider inspection from Aftermath Inspection Services LLC. Key West to Big Pine Key.">
+<meta name="theme-color" content="#111111">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Libre+Franklin:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--maroon:#6D282D;--maroon-dk:#521E22;--black:#111111;--slate:#414A5B;--paper:#F6F5F2;--ink:#1C1C1E;--mute:#5C6170;--line:#D6D3CC}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Libre Franklin",Arial,sans-serif;color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}
+  header .m{background:var(--maroon);color:#fff}
+  header .m .wrap{padding-block:22px 18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .ais{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:44px;line-height:1;letter-spacing:.01em;color:#fff;text-decoration:none}
+  .co{font-family:Archivo,Arial,sans-serif;font-weight:700;font-size:12px;letter-spacing:.14em}
+  header .b{background:var(--black);color:#fff}
+  header .b .wrap{padding-block:14px}
+  header h1{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:26px;letter-spacing:.03em;margin:0}
+  header .s{background:var(--slate);height:8px}
+  main{padding-block:26px 50px}
+  .lede{margin:0 0 22px;font-size:16px;color:#3A3C42}
+  fieldset{border:0;padding:0;margin:0 0 22px}
+  legend{font-family:Archivo,Arial,sans-serif;font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--maroon);margin-bottom:10px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .full{grid-column:1/-1}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-weight:600;font-size:14.5px;margin-bottom:5px}
+  label span{font-weight:400;color:var(--mute)}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:0}
+  textarea{min-height:96px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--maroon);outline-offset:0;border-color:var(--maroon)}
+  .check{display:flex;gap:10px;align-items:center;font-weight:600;margin-top:4px}
+  .check input{width:22px;height:22px}
+  .send{width:100%;min-height:56px;background:var(--maroon);color:#fff;border:0;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:18px;letter-spacing:.06em;cursor:pointer}
+  .send:hover,.send:focus-visible{background:var(--maroon-dk)}
+  .after{margin-top:16px;background:#fff;border:1px solid var(--line);padding:14px 16px;font-size:14.5px}
+  .after b{font-family:Archivo,Arial,sans-serif}
+  footer{border-top:1px solid var(--line);padding-block:20px 34px;color:var(--mute);font-size:13px}
+  a{color:var(--maroon)}
+</style>
+</head>
+<body>
+<header>
+  <div class="m"><div class="wrap"><a class="ais" href="/">AIS</a><span class="co">AFTERMATH INSPECTION SERVICES LLC</span></div></div>
+  <div class="b"><div class="wrap"><h1>REQUEST AN INSPECTION</h1></div></div>
+  <div class="s"></div>
+</header>
+
+<main class="wrap">
+  <p class="lede">Fill this out and tap Send. Your email app opens with the request ready to go to <b>requests@aftermathinspections.com</b>.</p>
+
+  <form id="f" novalidate>
+    <fieldset>
+      <legend>Who is requesting</legend>
+      <div class="grid">
+        <div><label for="company">Company</label><input id="company" autocomplete="organization" required></div>
+        <div><label for="name">Your name</label><input id="name" autocomplete="name" required></div>
+        <div><label for="phone">Phone on site</label><input id="phone" type="tel" autocomplete="tel" required></div>
+        <div><label for="email">Email <span>(for the result)</span></label><input id="email" type="email" autocomplete="email"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>The job</legend>
+      <div class="grid">
+        <div class="full"><label for="addr">Job address</label><input id="addr" autocomplete="street-address" required></div>
+        <div><label for="key">Key / area</label>
+          <select id="key"><option>Key West</option><option>Stock Island</option><option>Big Coppitt Key</option><option>Rockland / Saddlebunch</option><option>Sugarloaf Key</option><option>Cudjoe Key</option><option>Summerland Key</option><option>Ramrod Key</option><option>Little Torch Key</option><option>Big Pine Key</option><option>Other</option></select></div>
+        <div><label for="permit">Permit number</label><input id="permit" required></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Inspection needed</legend>
+      <div class="grid">
+        <div class="full"><label for="insp">Inspection type <span>(code and name, e.g. 175 Sheathing)</span></label><input id="insp" list="codes" required>
+          <datalist id="codes">
+            <option value="115 Foundation / Footers / Pilings / Augers"></option><option value="120 Slab"></option><option value="125 Lintel / Tie Beams / Grade Beams"></option>
+            <option value="135 Truss"></option><option value="150 Window / Door Framing"></option><option value="165 Roof / Wall Dry-in"></option><option value="175 Sheathing"></option>
+            <option value="191 Framing"></option><option value="199 Final Building"></option><option value="200 Roof Dry-in"></option><option value="210 Roof in Progress"></option>
+            <option value="294 Final Roof"></option><option value="305 Rough Electric / Ground Bond"></option><option value="399 Final Electric"></option>
+            <option value="405 Rough-in Mechanical"></option><option value="499 Final Mechanical"></option><option value="605 Rough-in Plumbing"></option><option value="699 Final Plumbing"></option>
+            <option value="240 Impact Covering Installation"></option><option value="293 Final Impact Resistant"></option>
+          </datalist></div>
+        <div><label for="date">Requested date</label><input id="date" type="date" required></div>
+        <div><label for="win">Time window</label>
+          <select id="win"><option>Anytime</option><option>First thing AM</option><option>Before noon</option><option>Afternoon</option></select></div>
+        <div class="full"><label class="check"><input id="urgent" type="checkbox"> Time-sensitive (concrete pour, crane, inspection holding up work)</label></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Site access</legend>
+      <div class="grid">
+        <div class="full"><label for="gate">Gate code / lockbox <span>(optional)</span></label><input id="gate"></div>
+        <div class="full"><label for="notes">Instructions for the inspector <span>(where on the property, dogs, who to call)</span></label><textarea id="notes"></textarea></div>
+      </div>
+    </fieldset>
+
+    <button class="send" type="submit">SEND REQUEST</button>
+    <div class="after" id="after" hidden>
+      <b>Your email app should be open with the request.</b> Tap send there to finish. If nothing opened, email the same details to <b>requests@aftermathinspections.com</b> or call <b>305-434-5884</b>.
+    </div>
+  </form>
+</main>
+
+<footer><div class="wrap">Aftermath Inspection Services LLC · Private Provider under F.S. §553.791 · Key West to Big Pine Key · <a href="/">Home</a></div></footer>
+
+<script>
+  const $=id=>document.getElementById(id);
+  const t=new Date(); t.setDate(t.getDate()+1); $('date').min=new Date().toISOString().slice(0,10); $('date').value=t.toISOString().slice(0,10);
+  try{["company","name","phone","email"].forEach(k=>{const v=localStorage.getItem("ais-req-"+k);if(v)$(k).value=v})}catch(e){}
+  $('f').addEventListener('submit',e=>{
+    e.preventDefault();
+    const need=["company","name","phone","addr","permit","insp","date"].filter(k=>!$(k).value.trim());
+    if(need.length){$(need[0]).focus();$(need[0]).reportValidity&&$(need[0]).setCustomValidity("Required");$(need[0]).reportValidity();$(need[0]).setCustomValidity("");return}
+    try{["company","name","phone","email"].forEach(k=>localStorage.setItem("ais-req-"+k,$(k).value))}catch(e){}
+    const d=new Date($('date').value+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+    const subj=`Inspection Request: ${$('addr').value}, ${$('key').value} | ${$('insp').value} | ${d}${$('urgent').checked?" | TIME-SENSITIVE":""}`;
+    const body=[
+      "INSPECTION REQUEST","",
+      `Company: ${$('company').value}`,`Requested by: ${$('name').value}`,`Phone on site: ${$('phone').value}`,`Email: ${$('email').value}`,"",
+      `Address: ${$('addr').value}, ${$('key').value}`,`Permit: ${$('permit').value}`,"",
+      `Inspection: ${$('insp').value}`,`Date: ${d}`,`Time window: ${$('win').value}`,`Time-sensitive: ${$('urgent').checked?"YES":"No"}`,"",
+      `Gate / lockbox: ${$('gate').value||"-"}`,`Instructions: ${$('notes').value||"-"}`
+    ].join("\n");
+    location.href="mailto:requests@aftermathinspections.com?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
+    $('after').hidden=false;
+  });
+</script>
+</body>
+</html>
