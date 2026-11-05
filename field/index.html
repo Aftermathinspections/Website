@@ -196,7 +196,7 @@ textarea{width:100%;min-height:180px;font:inherit;font-size:16px;padding:12px;bo
   <div class="who">Luigi Vaccaro<br>BU2239</div>
 </header>
 <div class="sample sync" id="sync"><span class="dot"></span><b id="synctxt">Connecting…</b><button id="signout" hidden>Sign out</button></div>
-<div class="login" id="login" hidden><form id="lf" autocomplete="on"><span class="mark">AIS</span><h2>Field sign-in</h2><p>Aftermath Inspection Services</p><label for="em">Email</label><input id="em" type="email" name="email" autocomplete="username" required><label for="pw">Password</label><input id="pw" type="password" name="password" autocomplete="current-password" required><button type="submit">SIGN IN</button><div class="err" id="lerr"></div></form></div>
+<div class="login" id="login" hidden><form id="lf" autocomplete="on"><span class="mark">AIS</span><h2>Field sign-in</h2><p>Aftermath Inspection Services</p><label for="em">Email</label><input id="em" type="email" autocapitalize="off" autocorrect="off" name="email" autocomplete="username" required><label for="pw">Password</label><div style="display:flex;gap:8px"><input id="pw" type="password" name="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required style="flex:1"><button type="button" id="pwshow" style="width:auto;margin:0;min-height:0;padding:0 16px;background:#fff;color:var(--ink);border:1px solid var(--line);font-size:15px;letter-spacing:0">Show</button></div><button type="submit">SIGN IN</button><div class="err" id="lerr"></div></form></div>
 
 <div class="wrap">
   <section class="list" aria-label="Today's inspections">
@@ -538,6 +538,7 @@ function showLogin(on){$("#login").hidden=!on;$("#signout").hidden=on}
 async function boot(){
   sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
   try{PENDING=await idb.all()||[]}catch(e){PENDING=[]}
+  $("#pwshow").onclick=()=>{const p=$("#pw");const sh=p.type==="password";p.type=sh?"text":"password";$("#pwshow").textContent=sh?"Hide":"Show"};
   $("#lf").onsubmit=async e=>{e.preventDefault();$("#lerr").textContent="";const btn=e.target.querySelector("button");btn.disabled=true;btn.textContent="SIGNING IN…";
     const{error}=await sb.auth.signInWithPassword({email:$("#em").value.trim(),password:$("#pw").value});
     btn.disabled=false;btn.textContent="SIGN IN";
