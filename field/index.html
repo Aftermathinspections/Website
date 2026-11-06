@@ -174,6 +174,7 @@ textarea{width:100%;min-height:180px;font:inherit;font-size:16px;padding:12px;bo
 .steps li.legrow{font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--maroon);font-weight:700;border-bottom:0;padding-top:14px}
 .cxl{color:var(--fail)!important}.chip.cancelled{background:#eee;color:#555}.repres.cancelled{background:#777}.req.iscx{border-left:5px solid var(--fail);padding-left:10px}.req .cxtag{color:var(--fail);font-weight:800;font-size:12px;letter-spacing:.1em}
 .rph{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.rph img{width:72px;height:72px;object-fit:cover;border:1px solid var(--line);display:block}.phload{font-size:12px;color:var(--mute);border:1px dashed var(--line);width:72px;height:72px;display:flex;align-items:center;justify-content:center}
+.delfig{position:relative;display:block}.phdel{position:absolute;top:-8px;right:-8px;width:34px;height:34px;border-radius:50%;border:2px solid #fff;background:#A3262A;color:#fff;font-size:20px;font-weight:700;line-height:1;cursor:pointer;z-index:2}
 .reqbox{border:2px solid var(--maroon);background:#fff;padding:12px 14px;margin-bottom:6px}
 .reqbox h3{margin:0 0 8px;font-family:var(--display);font-size:13px;letter-spacing:.12em;color:var(--maroon)}
 .req{border-top:1px solid var(--line);padding:10px 0}.req:first-of-type{border-top:0}
@@ -340,7 +341,7 @@ function render(){
     <div class="viewer" data-pane="${k}"${k?"":' id="viewer"'}>${plan(j,PV[k].s,PV[k].z)}</div>
     <div class="zoom"><button class="zout" aria-label="Zoom out">−</button><button class="zin" aria-label="Zoom in">+</button><span class="zhint"><b>Sheet ${PV[k].s+1} of ${j.sheets.length}</b>${cmp?"":" · swipe up for next, down for previous · pinch to zoom · double-tap to jump in or out"}</span></div></div>`).join("")}</div></div>${pfull?"":upl}`;
   if(tab==="photos")pane=`<label class="shoot" for="cam">Take photo<input id="cam" type="file" accept="image/*" capture="environment" multiple></label>
-    ${s.photos.length?`<div class="thumbs">${s.photos.map((p,i)=>`<figure><img src="${p}" alt="Photo ${i+1}"><figcaption>PHOTO ${i+1}</figcaption></figure>`).join("")}</div>`:`<p class="empty">No photos yet. Photos are numbered in order so the report can reference them.</p>`}`;
+    ${s.photos.length?`<div class="thumbs">${s.photos.map((p,i)=>`<figure class="delfig"><img src="${p}" alt="Photo ${i+1}"><figcaption>PHOTO ${i+1}</figcaption><button class="phdel" data-phdel="${i}" aria-label="Delete photo ${i+1}">×</button></figure>`).join("")}</div>`:`<p class="empty">No photos yet. Photos are numbered in order so the report can reference them.</p>`}`;
   if(tab==="notes")pane=`<label for="notes" class="hint" style="display:block;margin:0 0 6px">Field notes for the report</label><textarea id="notes" placeholder="Example: Pile P7 dowels short of plan length. Contractor to verify with EOR before pour.">${esc(s.notes)}</textarea>
     <p class="hint">Saved automatically. Plaud recordings will drop in here in a later version.</p>`;
   const corrList=s.corr.split("\n").map(x=>x.trim()).filter(Boolean);
@@ -412,7 +413,8 @@ function render(){
   document.onkeydown=e=>{if(e.key==="Escape"&&pfull){const ef=$("#exitfull");if(ef)ef.click();return}if(tab!=="plans"||!$(".viewer")||/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
     if(e.key==="ArrowDown"||e.key==="PageDown"){e.preventDefault();goSheet(act,PV[act].s+1)}
     if(e.key==="ArrowUp"||e.key==="PageUp"){e.preventDefault();goSheet(act,PV[act].s-1)}};
-  const cam=$("#cam"); if(cam)cam.onchange=e=>{const id=j.id;[...e.target.files].forEach(async f=>{const blob=await shrink(f);s.photos.push(URL.createObjectURL(blob));keepY(render);addPhoto(id,blob)})};
+  const cam=$("#cam"); if(cam)cam.onchange=e=>{const id=j.id;[...e.target.files].forEach(async f=>{const blob=await shrink(f);const key=newKey(id);const url=URL.createObjectURL(blob);s.photos.push(url);(s.pref=s.pref||[]).push({url,path:key});keepY(render);addPhoto(id,blob,key)})};
+  el.querySelectorAll("[data-phdel]").forEach(b=>b.onclick=()=>deletePhoto(j,+b.dataset.phdel));
   const pu=$("#planup"); if(pu)pu.onchange=e=>uploadPlans(j,[...e.target.files]);
   if(tab==="plans"&&j.sheets.length)fetchSheets(j);
   const nt=$("#notes"); if(nt)nt.oninput=()=>{s.notes=nt.value;save()};
@@ -475,7 +477,8 @@ addEventListener("online",flush); addEventListener("offline",()=>syncLabel(Objec
 
 /* ---- photos ---- */
 function shrink(file,max=2000){return new Promise(res=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),"image/jpeg",.82)};im.onerror=()=>res(file);im.src=u})}
-async function addPhoto(inspId,blob){const key=`photos/${inspId}/${Date.now()}-${Math.random().toString(36).slice(2,7)}.jpg`;const rec={key,inspId,blob};PENDING.push(rec);try{await idb.put(rec)}catch(e){}syncLabel(Object.keys(Q).length+PENDING.length);flush()}
+const newKey=inspId=>`photos/${inspId}/${Date.now()}-${Math.random().toString(36).slice(2,7)}.jpg`;
+async function addPhoto(inspId,blob,key){key=key||newKey(inspId);const rec={key,inspId,blob};PENDING.push(rec);try{await idb.put(rec)}catch(e){}syncLabel(Object.keys(Q).length+PENDING.length);flush()}
 
 /* ---- plan sheets: download once, keep on the iPad ---- */
 const busy={};
@@ -518,10 +521,11 @@ function reqHTML(){const R=(RAW&&RAW.reqs)||[];if(!R.length)return"";
   return `<div class="reqbox"><h3>NEW REQUESTS (${R.length})</h3>${R.map(r=>{const cx=/^CANCEL:/i.test(r.inspection||""),rs=/^RESCHEDULE:/i.test(r.inspection||"");return `<div class="req${cx||rs?" iscx":""}">${cx?`<div class="cxtag">CANCELLATION REQUEST</div>`:rs?`<div class="cxtag">RESCHEDULE REQUEST · NEW DATE BELOW</div>`:""}<div class="ra">${esc(r.address||"")}${r.area?", "+esc(r.area):""}</div>
    <div class="rm">${esc(r.inspection||"")} · ${r.requested_date?new Date(r.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):""} · ${esc(r.time_window||"")}${r.urgent?" · <b style='color:var(--fail)'>TIME-SENSITIVE</b>":""}</div>
    <div class="rm">${esc(r.company||"")} · ${esc(r.name||"")} · ${esc(r.phone||"")} · Permit ${esc(r.permit||"")}</div>
-   ${(r.photos||[]).length?`<div class="rph">${r.photos.map((p,i)=>REQIMG[p]?`<a href="${REQIMG[p]}" target="_blank" rel="noopener"><img src="${REQIMG[p]}" alt="Contractor photo ${i+1}"></a>`:`<span class="phload">Photo ${i+1}…</span>`).join("")}</div>`:""}
+   ${(r.photos||[]).length?`<div class="rph">${r.photos.map((p,i)=>REQIMG[p]?`<span class="delfig"><a href="${REQIMG[p]}" target="_blank" rel="noopener"><img src="${REQIMG[p]}" alt="Contractor photo ${i+1}"></a><button class="phdel" data-rphdel="${r.id}|${p}" aria-label="Delete photo ${i+1}">×</button></span>`:`<span class="phload">Photo ${i+1}…</span>`).join("")}</div>`:""}
    ${r.notes||r.gate_code?`<div class="rn">${r.gate_code?"Gate: "+esc(r.gate_code)+". ":""}${esc(r.notes||"")}</div>`:""}
    <div class="rb2"><button class="acc" data-acc="${r.id}">${cx?"Cancel it on my schedule":rs?"Move it to the new date":"Add to my schedule"}</button><button data-dis="${r.id}">Dismiss</button></div></div>`}).join("")}</div>`}
 function bindReq(){
+  document.querySelectorAll("[data-rphdel]").forEach(b=>b.onclick=e=>{e.preventDefault();const[i,...p]=b.dataset.rphdel.split("|");deleteReqPhoto(i,p.join("|"))});
   document.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>acceptReq(b.dataset.acc,b));
   document.querySelectorAll("[data-dis]").forEach(b=>b.onclick=async()=>{if(!confirm("Dismiss this request?"))return;
     const{error}=await sb.from("requests").update({status:"dismissed"}).eq("id",b.dataset.dis);if(error)return toast("Couldn't dismiss: "+error.message);toast("Request dismissed");load()})}
@@ -591,10 +595,26 @@ function build(){const now=Date.now(),jobs=RAW.jobs||[],ins=RAW.insp||[],shs=RAW
   loadPhotos();}
 async function loadPhotos(){
   for(const x of JOBS){const s=S[x.id];if(s._loaded)continue;s._loaded=true;
-    const rows=PHOTOROWS[x.id]||[];const pend=PENDING.filter(p=>p.inspId===x.id).map(p=>URL.createObjectURL(p.blob));
-    let urls=[];if(rows.length&&navigator.onLine){try{const{data}=await sb.storage.from(BUCKET).createSignedUrls(rows.map(r=>r.path),60*60*12);urls=(data||[]).map(d=>d.signedUrl).filter(Boolean)}catch(e){}}
-    s.photos=[...urls,...pend,...s.photos.filter(u=>u.startsWith("blob:")&&!pend.includes(u))]}
+    const rows=PHOTOROWS[x.id]||[];const refs=[];
+    if(rows.length&&navigator.onLine){try{const{data}=await sb.storage.from(BUCKET).createSignedUrls(rows.map(r=>r.path),60*60*12);(data||[]).forEach((d,i)=>{if(d.signedUrl)refs.push({url:d.signedUrl,path:rows[i].path,id:rows[i].id})})}catch(e){}}
+    const have=new Set(refs.map(r=>r.path));
+    PENDING.filter(p=>p.inspId===x.id&&!have.has(p.key)).forEach(p=>{const old=(s.pref||[]).find(r=>r.path===p.key);refs.push({url:old?old.url:URL.createObjectURL(p.blob),path:p.key});have.add(p.key)});
+    (s.pref||[]).forEach(r=>{if(!have.has(r.path)&&r.url.startsWith("blob:"))refs.push(r)});
+    s.pref=refs;s.photos=refs.map(r=>r.url)}
   keepY(render)}
+async function deletePhoto(j,i){const s=S[j.id],ref=(s.pref||[])[i];if(!ref)return;
+  if(!confirm(`Delete photo ${i+1}? This can't be undone.`))return;
+  s.photos.splice(i,1);s.pref.splice(i,1);keepY(render);
+  const pi=PENDING.findIndex(p=>p.key===ref.path);
+  if(pi>=0){PENDING.splice(pi,1);try{await idb.del(ref.path)}catch(e){}syncLabel(Object.keys(Q).length+PENDING.length)}
+  try{const d=await sb.from("photos").delete().eq("inspection_id",j.id).eq("path",ref.path);if(d.error)throw d.error;
+    if(!ref.path.startsWith("requests/"))await sb.storage.from(BUCKET).remove([ref.path]);
+    if(PHOTOROWS[j.id])PHOTOROWS[j.id]=PHOTOROWS[j.id].filter(r=>r.path!==ref.path);toast("Photo deleted")}
+  catch(e){console.warn(e);toast("Deleted here. Couldn't reach the office copy, try again when online.")}}
+async function deleteReqPhoto(rid,path){const r=(RAW.reqs||[]).find(x=>x.id===rid);if(!r)return;if(!confirm("Delete this photo from Rod's request?".replace("Rod's",(r.name||"the contractor")+"'s")))return;
+  const left=(r.photos||[]).filter(p=>p!==path);
+  const{error}=await sb.from("requests").update({photos:left}).eq("id",rid);if(error)return toast("Couldn't delete: "+error.message);
+  r.photos=left;await sb.storage.from(BUCKET).remove([path]).catch(()=>{});toast("Photo deleted");renderList()}
 async function load(){
   try{
     if(!navigator.onLine)throw new Error("offline");
