@@ -190,6 +190,9 @@
         btn.textContent="SENDING…"}
       const r=await fetch(SB_URL+"/rest/v1/requests",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify(row)});
       if(!r.ok)throw new Error("status "+r.status);
+      try{const kind={req:"New request",rs:"Reschedule",cx:"Cancellation"}[MODE];const dd=new Date(row.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+        fetch("https://ntfy.sh/ais-req-5ba423ff27aa",{method:"POST",headers:{"Title":(kind+": "+row.address).replace(/[^\x20-\x7E]/g,""),"Priority":row.urgent||MODE==="cx"?"high":"default","Tags":MODE==="cx"?"x":MODE==="rs"?"calendar":"clipboard","Click":"https://aftermathinspections.com/field/"},
+          body:`${row.inspection.replace(/^(CANCEL|RESCHEDULE):\s*/,"")} - ${dd} (${row.time_window})${row.urgent?" - TIME-SENSITIVE":""}\n${row.company} - ${row.name} ${row.phone}${row.photos?"\n"+row.photos.length+" photo(s)":""}`}).catch(()=>{})}catch(_){}
       const d=new Date(row.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
       after.className="after ok";after.innerHTML=MODE==="rs"?`<b>New date sent.</b> ${row.inspection.replace(/^RESCHEDULE:\s*/,"")} at ${row.address}, moved to ${d}. The inspector will confirm with you at ${row.phone}.`:CX?`<b>Cancellation sent.</b> ${row.inspection.replace(/^CANCEL:\s*/,"")} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`:`<b>Request received.</b> ${row.inspection} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`;
       after.hidden=false;btn.textContent="SENT ✓";
