@@ -172,6 +172,7 @@ textarea{width:100%;min-height:180px;font:inherit;font-size:16px;padding:12px;bo
 .steps li b{display:inline-block;width:28px;color:var(--maroon);font-family:var(--display)}
 .steps li span{color:var(--mute);font-size:13px;margin-left:6px}
 .steps li.legrow{font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--maroon);font-weight:700;border-bottom:0;padding-top:14px}
+.cxl{color:var(--fail)!important}.chip.cancelled{background:#eee;color:#555}.repres.cancelled{background:#777}.req.iscx{border-left:5px solid var(--fail);padding-left:10px}.req .cxtag{color:var(--fail);font-weight:800;font-size:12px;letter-spacing:.1em}
 .reqbox{border:2px solid var(--maroon);background:#fff;padding:12px 14px;margin-bottom:6px}
 .reqbox h3{margin:0 0 8px;font-family:var(--display);font-size:13px;letter-spacing:.12em;color:var(--maroon)}
 .req{border-top:1px solid var(--line);padding:10px 0}.req:first-of-type{border-top:0}
@@ -219,9 +220,9 @@ let JOBS=[];
 let S={};
 const DEF={result:null,done:false,notes:"",photos:[],corr:"",deliver:"file",doneAt:null,preview:false};
 const st=id=>{const o=S[id]||(S[id]={});for(const k in DEF)if(o[k]===undefined)o[k]=Array.isArray(DEF[k])?[]:DEF[k];return o};
-const RL={pass:"Passed",fail:"Failed",partial:"Partial",corr:"Corrections Needed"};
+const RL={pass:"Passed",fail:"Failed",partial:"Partial",corr:"Corrections Needed",cancelled:"Cancelled"};
 const tm=t=>t?new Date(t).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"";
-const needsFix=r=>r&&r!=="pass";
+const needsFix=r=>r&&r!=="pass"&&r!=="cancelled";
 const save=()=>{if(cur)persist(cur)};
 let cur=null, tab="info", sheet=0, zoom=1, PV=[{s:0,z:1},{s:1,z:1}], cmp=false, act=0, pend=null, pfull=false;
 const keepY=f=>{const y=window.scrollY;f();window.scrollTo(0,y)};
@@ -356,7 +357,8 @@ function render(){
      <div class="seg"><button data-d="file" aria-pressed="${s.deliver==="file"}">Keep on file</button><button data-d="send" aria-pressed="${s.deliver==="send"}">Send to customer</button></div>
      <button class="ghostbtn" id="pv">${s.preview?"Hide customer report":"Preview customer report"}</button>${s.preview?report():""}
      <button class="complete" id="complete" ${s.result&&(!needsFix(s.result)||corrList.length)?"":"disabled"}>${s.deliver==="send"?"COMPLETE &amp; SEND":"COMPLETE INSPECTION"}</button>
-     ${needsFix(s.result)&&!corrList.length?`<p class="hint">Write at least one correction to complete a ${RL[s.result].toLowerCase()} inspection.</p>`:""}`;
+     ${needsFix(s.result)&&!corrList.length?`<p class="hint">Write at least one correction to complete a ${RL[s.result].toLowerCase()} inspection.</p>`:""}
+     <div class="rowbtns"><button class="reopen" id="reschinsp">Reschedule</button><button class="reopen cxl" id="cancelinsp" style="margin-top:0">Cancel this inspection</button></div>`;
   el.innerHTML=`<button class="back" id="back">‹ All inspections</button>
    <div class="dh"><h2>${esc(j.addr)}, ${esc(j.key)}</h2><span class="meta">Permit <b>${j.permit}</b></span><span class="meta">Stop ${seq} of ${JOBS.length}</span></div>
    <div class="acts"><a class="dir" href="https://maps.apple.com/?daddr=${encodeURIComponent(j.addr+", "+j.key+", FL")}" target="_blank" rel="noopener">Directions</a><a class="dir alt" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(j.addr+", "+j.key+", FL")}" target="_blank" rel="noopener">Google Maps</a><span class="win big${j.urgent?" urgent":""}">${esc(j.win)}</span></div>
@@ -419,6 +421,15 @@ function render(){
   const pv=$("#pv"); if(pv)pv.onclick=()=>{s.preview=!s.preview;render()};
   const sn=$("#sendnow"); if(sn)sn.onclick=()=>{s.deliver="send";save();toast("Marked to send. Automatic emailing comes in a later version.");render()};
   const c=$("#complete"); if(c)c.onclick=()=>{s.done=true;s.doneAt=Date.now();s.preview=false;save();toast(s.deliver==="send"?`Completed. Marked to send to customer.`:`Completed, report on file`);planRoute();document.body.classList.remove("open");const next=ORDER.map(o=>J(o.id)).find(x=>!st(x.id).done);cur=next&&window.innerWidth>860?next.id:null;tab="info";render()};
+  const rz=$("#reschinsp"); if(rz)rz.onclick=async()=>{const v=prompt("New date for this inspection (for example 11/12):");if(!v)return;
+    const m=v.trim().match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);if(!m)return toast("Type the date like 11/12");
+    const now=new Date();let y=m[3]?+(m[3].length===2?"20"+m[3]:m[3]):now.getFullYear();const d=new Date(y,+m[1]-1,+m[2]);if(!m[3]&&d<new Date(now.getFullYear(),now.getMonth(),now.getDate()))d.setFullYear(y+1);
+    const iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const win=d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · "+(String(j.win).split(" · ").pop()||"Anytime");
+    const{error}=await sb.from("inspections").update({scheduled_date:iso,time_window:win}).eq("id",j.id);if(error)return toast("Couldn't move it: "+error.message);
+    toast("Moved to "+d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}));load()};
+  const cx=$("#cancelinsp"); if(cx)cx.onclick=()=>{const why=prompt("Cancel this inspection?\n\nReason (optional), e.g. Contractor not ready:");if(why===null)return;
+    s.result="cancelled";s.done=true;s.doneAt=Date.now();s.deliver="file";s.notes=(s.notes?s.notes+"\n":"")+"CANCELLED "+new Date().toLocaleDateString("en-US")+(why.trim()?": "+why.trim():"");save();toast("Inspection cancelled");planRoute();cur=null;document.body.classList.remove("open");render()};
   const ro=$("#reopen"); if(ro)ro.onclick=()=>{s.done=false;s.doneAt=null;save();planRoute();render()};
   $("#back").onclick=()=>{document.body.classList.remove("open");render()};
 }
@@ -427,7 +438,7 @@ function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeou
 const SB_URL="https://lfihnfgrkrxdxzmeuyph.supabase.co", SB_KEY="sb_publishable_ewvQxbyA7lEuC0tTfZZfvg_LtAm5TGd", BUCKET="files";
 let sb=null, RAW=null, PHOTOROWS={}, IMG={}, Q={};
 try{Q=JSON.parse(localStorage.getItem("ais-q")||"{}")}catch(e){Q={}}
-const RS={pass:"Pass",fail:"Fail",partial:"Partial",corr:"Corrections"};
+const RS={pass:"Pass",fail:"Fail",partial:"Partial",corr:"Corrections",cancelled:"Cancelled"};
 const dstr=d=>{const x=new Date(d);return isNaN(x)?"":(x.getMonth()+1)+"/"+x.getDate()+"/"+String(x.getFullYear()).slice(2)};
 const sameDay=(a,b)=>new Date(a).toDateString()===new Date(b).toDateString();
 
@@ -503,16 +514,18 @@ async function uploadPlans(j,files){const msg=t=>{const m=$("#upmsg");if(m)m.tex
 
 /* ---- contractor requests ---- */
 function reqHTML(){const R=(RAW&&RAW.reqs)||[];if(!R.length)return"";
-  return `<div class="reqbox"><h3>NEW REQUESTS (${R.length})</h3>${R.map(r=>`<div class="req"><div class="ra">${esc(r.address||"")}${r.area?", "+esc(r.area):""}</div>
+  return `<div class="reqbox"><h3>NEW REQUESTS (${R.length})</h3>${R.map(r=>{const cx=/^CANCEL:/i.test(r.inspection||""),rs=/^RESCHEDULE:/i.test(r.inspection||"");return `<div class="req${cx||rs?" iscx":""}">${cx?`<div class="cxtag">CANCELLATION REQUEST</div>`:rs?`<div class="cxtag">RESCHEDULE REQUEST · NEW DATE BELOW</div>`:""}<div class="ra">${esc(r.address||"")}${r.area?", "+esc(r.area):""}</div>
    <div class="rm">${esc(r.inspection||"")} · ${r.requested_date?new Date(r.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):""} · ${esc(r.time_window||"")}${r.urgent?" · <b style='color:var(--fail)'>TIME-SENSITIVE</b>":""}</div>
    <div class="rm">${esc(r.company||"")} · ${esc(r.name||"")} · ${esc(r.phone||"")} · Permit ${esc(r.permit||"")}</div>
    ${r.notes||r.gate_code?`<div class="rn">${r.gate_code?"Gate: "+esc(r.gate_code)+". ":""}${esc(r.notes||"")}</div>`:""}
-   <div class="rb2"><button class="acc" data-acc="${r.id}">Add to my schedule</button><button data-dis="${r.id}">Dismiss</button></div></div>`).join("")}</div>`}
+   <div class="rb2"><button class="acc" data-acc="${r.id}">${cx?"Cancel it on my schedule":rs?"Move it to the new date":"Add to my schedule"}</button><button data-dis="${r.id}">Dismiss</button></div></div>`}).join("")}</div>`}
 function bindReq(){
   document.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>acceptReq(b.dataset.acc,b));
   document.querySelectorAll("[data-dis]").forEach(b=>b.onclick=async()=>{if(!confirm("Dismiss this request?"))return;
     const{error}=await sb.from("requests").update({status:"dismissed"}).eq("id",b.dataset.dis);if(error)return toast("Couldn't dismiss: "+error.message);toast("Request dismissed");load()})}
-async function acceptReq(id,btn){const r=RAW.reqs.find(x=>x.id===id);if(!r)return;btn.disabled=true;btn.textContent="Adding…";
+async function acceptReq(id,btn){const r=RAW.reqs.find(x=>x.id===id);if(!r)return;btn.disabled=true;btn.textContent="Working…";
+  if(/^CANCEL:/i.test(r.inspection||""))return cancelReq(r,btn);
+  if(/^RESCHEDULE:/i.test(r.inspection||""))return cancelReq(r,btn,true);
   try{
     const m=String(r.inspection||"").match(/^\s*(\d{3})\s*[-·:]?\s*(.*)$/);const code=m?m[1]:null,name=(m?m[2]:r.inspection)||"Inspection";
     const norm=x=>String(x||"").replace(/\s+/g,"").toUpperCase();
@@ -528,6 +541,21 @@ async function acceptReq(id,btn){const r=RAW.reqs.find(x=>x.id===id);if(!r)retur
     const u=await sb.from("requests").update({status:"scheduled"}).eq("id",id);if(u.error)throw u.error;
     toast("Added to your schedule");await load()
   }catch(e){console.error(e);toast("Couldn't add it: "+(e.message||e));btn.disabled=false;btn.textContent="Add to my schedule"}}
+
+async function cancelReq(r,btn,move){const lbl=move?"Move it to the new date":"Cancel it on my schedule";
+  try{const norm=x=>String(x||"").replace(/\s+/g,"").toUpperCase();const code=(String(r.inspection).replace(/^(CANCEL|RESCHEDULE):\s*/i,"").match(/^(\d{3})/)||[])[1];
+    const job=(RAW.jobs||[]).find(j=>norm(j.permit)===norm(r.permit));
+    const open=job?(RAW.insp||[]).filter(i=>i.job_id===job.id&&!i.done_at&&!i.result):[];
+    const hit=open.find(i=>code&&i.code===code)||(open.length===1?open[0]:null);
+    if(!hit){toast("No matching open inspection found. Check the job, then Dismiss.");btn.disabled=false;btn.textContent=lbl;return}
+    if(move){const win=(r.requested_date?new Date(r.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · ":"")+(r.time_window||"Anytime");
+      const u=await sb.from("inspections").update({scheduled_date:r.requested_date,time_window:win,urgent:!!r.urgent,notes:[hit.notes,"Moved by "+(r.name||"contractor")+(r.notes?": "+r.notes:"")].filter(Boolean).join(". ")}).eq("id",hit.id);if(u.error)throw u.error;
+      const v=await sb.from("requests").update({status:"scheduled"}).eq("id",r.id);if(v.error)throw v.error;toast("Moved to the new date");return load()}
+    const note=[hit.notes,"CANCELLED by "+(r.name||"contractor")+" "+new Date().toLocaleDateString("en-US")+(r.notes?": "+r.notes:"")].filter(Boolean).join(". ");
+    const u=await sb.from("inspections").update({result:"cancelled",done_at:new Date().toISOString(),notes:note}).eq("id",hit.id);if(u.error)throw u.error;
+    const v=await sb.from("requests").update({status:"scheduled"}).eq("id",r.id);if(v.error)throw v.error;
+    toast("Inspection cancelled");await load()
+  }catch(e){toast("Couldn't cancel: "+(e.message||e));btn.disabled=false;btn.textContent=lbl}}
 
 /* ---- loading ---- */
 function build(){const now=Date.now(),jobs=RAW.jobs||[],ins=RAW.insp||[],shs=RAW.sheets||[],phs=RAW.photos||[];

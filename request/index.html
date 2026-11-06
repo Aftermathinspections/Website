@@ -43,6 +43,12 @@
   .after.ok{border-left:6px solid #1F6B3A}.after.bad{border-left:6px solid #A3262A}
   .deadline{background:#FBF3DF;border:1px solid #E7D3A1;padding:10px 12px;font-size:14.5px}
   .send:disabled{opacity:.6}
+  .mode{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 0 22px}
+  .mode button{min-height:50px;border:2px solid var(--maroon);background:#fff;color:var(--maroon);font-family:Archivo,Arial,sans-serif;font-weight:700;font-size:15px;cursor:pointer}
+  .mode button[aria-pressed="true"]{background:var(--maroon);color:#fff}
+  body.cx .send{background:#A3262A}
+  body.cx .reqonly{display:none}
+  body.cx .cxhide{display:none}
   footer{border-top:1px solid var(--line);padding-block:20px 34px;color:var(--mute);font-size:13px}
   a{color:var(--maroon)}
 </style>
@@ -57,6 +63,7 @@
 <main class="wrap">
   <p class="lede">Fill this out and tap <b>Send request</b>. It goes straight to the inspector's schedule, and you'll see a confirmation on this screen.</p>
 
+  <div class="mode" role="tablist"><button type="button" id="m_req" aria-pressed="true">Request</button><button type="button" id="m_rs" aria-pressed="false">Reschedule</button><button type="button" id="m_cx" aria-pressed="false">Cancel</button></div>
   <form id="f" novalidate>
     <fieldset>
       <legend>Who is requesting</legend>
@@ -80,23 +87,23 @@
     </fieldset>
 
     <fieldset>
-      <legend>Inspection needed</legend>
+      <legend id="leg_insp">Inspection needed</legend>
       <div class="grid">
         <div class="full"><label for="inspsel">Inspection type</label><select id="inspsel"></select><input id="insp" placeholder="Type the inspection, e.g. 108 Framing" style="margin-top:8px" hidden>
           </div>
-        <div><label for="date">Requested date</label><input id="date" type="date" required></div>
-        <div><label for="win">Time window</label>
+        <div><label for="date" id="lab_date">Requested date</label><input id="date" type="date" required></div>
+        <div class="reqonly"><label for="win">Time window</label>
           <select id="win"><option>Anytime</option><option>First thing AM</option><option>Before noon</option><option>Afternoon</option></select></div>
-        <div class="full"><label class="check"><input id="urgent" type="checkbox"> Time-sensitive (concrete pour, crane, inspection holding up work)</label></div>
+        <div class="full reqonly"><label class="check"><input id="urgent" type="checkbox"> Time-sensitive (concrete pour, crane, inspection holding up work)</label></div>
         <div class="full deadline" id="deadline" hidden></div>
       </div>
     </fieldset>
 
     <fieldset>
-      <legend>Site access</legend>
+      <legend id="leg_site">Site access</legend>
       <div class="grid">
-        <div class="full"><label for="gate">Gate code / lockbox <span>(optional)</span></label><input id="gate"></div>
-        <div class="full"><label for="notes">Instructions for the inspector <span>(where on the property, dogs, who to call)</span></label><textarea id="notes"></textarea></div>
+        <div class="full reqonly"><label for="gate">Gate code / lockbox <span>(optional)</span></label><input id="gate"></div>
+        <div class="full"><label for="notes" id="lab_notes">Instructions for the inspector <span>(where on the property, dogs, who to call)</span></label><textarea id="notes"></textarea></div>
       </div>
     </fieldset>
 
@@ -122,6 +129,15 @@
     Collier:"Collier County: send requests by <b>12 noon the business day before</b>. The inspector has to post the inspection on the GMCD portal by 2 PM the day before.",
     Lee:"Lee County: send requests by <b>12 noon the business day before</b>. Type the inspection name if it isn't in the list."};
   const qs=new URLSearchParams(location.search);
+  let CX=false, MODE="req";
+  const BTN={req:"SEND REQUEST",rs:"SEND NEW DATE",cx:"SEND CANCELLATION"};
+  function setMode(m){MODE=m;CX=m==="cx";document.body.classList.toggle("cx",CX);["req","rs","cx"].forEach(k=>$('m_'+k).setAttribute("aria-pressed",k===m));
+    $('leg_insp').textContent={req:"Inspection needed",rs:"Inspection to move",cx:"Inspection to cancel"}[m];
+    $('lab_date').textContent={req:"Requested date",rs:"New date",cx:"Date it was scheduled for"}[m];
+    $('leg_site').textContent=CX?"Reason":"Site access";
+    $('lab_notes').innerHTML=m==="req"?"Instructions for the inspector <span>(where on the property, dogs, who to call)</span>":m==="rs"?"Reason / notes <span>(optional)</span>":"Reason for cancelling <span>(optional)</span>";
+    $('sendbtn').textContent=BTN[m];$('after').hidden=true;$('after').className="after"}
+  $('m_req').onclick=()=>setMode("req");$('m_rs').onclick=()=>setMode("rs");$('m_cx').onclick=()=>setMode("cx");
   function setCounty(c,keep){
     $('county').value=c;
     $('key').innerHTML=AREAS[c].map(a=>`<option>${a}</option>`).join("");
@@ -133,6 +149,7 @@
   }
   $('county').onchange=()=>setCounty($('county').value);
   $('inspsel').onchange=()=>{const v=$('inspsel').value;if(v==="__other"){$('insp').hidden=false;$('insp').value="";$('insp').focus()}else{$('insp').hidden=true;$('insp').value=v}};
+
   setCounty(AREAS[qs.get("county")]?qs.get("county"):"Monroe",qs.get("area"));
   if(qs.get("addr"))$('addr').value=qs.get("addr");
   if(qs.get("permit"))$('permit').value=qs.get("permit");
@@ -148,21 +165,21 @@
     try{["company","name","phone","email"].forEach(k=>localStorage.setItem("ais-req-"+k,$(k).value))}catch(e){}
     const row={company:$('company').value.trim(),name:$('name').value.trim(),phone:$('phone').value.trim(),email:$('email').value.trim()||null,
       county:$('county').value,area:$('key').value,address:$('addr').value.trim(),permit:$('permit').value.trim().toUpperCase(),
-      inspection:$('insp').value.trim(),requested_date:$('date').value,time_window:$('win').value,urgent:$('urgent').checked,
+      inspection:({req:"",rs:"RESCHEDULE: ",cx:"CANCEL: "}[MODE])+$('insp').value.trim(),requested_date:$('date').value,time_window:$('win').value,urgent:$('urgent').checked,
       gate_code:$('gate').value.trim()||null,notes:$('notes').value.trim()||null};
     const btn=$('sendbtn'),after=$('after');btn.disabled=true;btn.textContent="SENDING…";
     try{
       const r=await fetch(SB_URL+"/rest/v1/requests",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify(row)});
       if(!r.ok)throw new Error("status "+r.status);
       const d=new Date(row.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
-      after.className="after ok";after.innerHTML=`<b>Request received.</b> ${row.inspection} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`;
+      after.className="after ok";after.innerHTML=MODE==="rs"?`<b>New date sent.</b> ${row.inspection.replace(/^RESCHEDULE:\s*/,"")} at ${row.address}, moved to ${d}. The inspector will confirm with you at ${row.phone}.`:CX?`<b>Cancellation sent.</b> ${row.inspection.replace(/^CANCEL:\s*/,"")} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`:`<b>Request received.</b> ${row.inspection} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`;
       after.hidden=false;btn.textContent="SENT ✓";
       ["insp","gate","notes"].forEach(k=>$(k).value="");$('inspsel').value="";if(CODES[row.county].length)$('insp').hidden=true;$('urgent').checked=false;
-      setTimeout(()=>{btn.disabled=false;btn.textContent="SEND ANOTHER REQUEST"},2500);
+      setTimeout(()=>{btn.disabled=false;btn.textContent=BTN[MODE]},2500);
     }catch(err){
       const body=Object.entries(row).map(([k,v])=>k+": "+(v??"-")).join("\n");
       after.className="after bad";after.innerHTML=`<b>That didn't go through.</b> Check your signal and tap Send again. Or <a href="mailto:Luigi@aftermathinspections.com?subject=${encodeURIComponent("Inspection Request: "+row.address+" | "+row.inspection)}&body=${encodeURIComponent(body)}">email the request instead</a>.`;
-      after.hidden=false;btn.disabled=false;btn.textContent="SEND REQUEST";
+      after.hidden=false;btn.disabled=false;btn.textContent=BTN[MODE];
     }
     after.scrollIntoView({behavior:"smooth",block:"center"});
   });
