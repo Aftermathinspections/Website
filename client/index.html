@@ -75,6 +75,7 @@ textarea{min-height:84px}
 .phs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.phs figure{margin:0;position:relative}
 .phs img{width:76px;height:76px;object-fit:cover;border:1px solid var(--line);display:block}
 .phs button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:#111;color:#fff;font-weight:700}
+.sendbox{background:#fff;border:1px solid var(--line);padding:12px 14px;margin-top:16px}.sendbox b{font-family:var(--display)}.sendbox label:not(.check){margin-top:8px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--black);color:#fff;padding:12px 20px;font-weight:600;z-index:30;max-width:90vw}
 .toast[hidden]{display:none}
 </style></head><body>
@@ -117,6 +118,10 @@ textarea{min-height:84px}
     <div class="deadline" id="fdead" hidden></div>
     <div id="phwrap"><label>Photos <span class="hint">(optional, up to 10)</span></label>
       <label class="pickph">＋ Add photos<input type="file" id="fph" accept="image/*" multiple></label><div class="phs" id="fphs"></div></div>
+    <div id="sendwrap"><div class="sendbox"><b>Send the result to</b>
+      <label for="remail">Email</label><input id="remail" type="email" autocomplete="email" autocapitalize="off" placeholder="name@company.com">
+      <label for="rphone">Phone (text)</label><input id="rphone" type="tel" autocomplete="tel">
+      <label class="check"><input id="rsave" type="checkbox"> Save as my default for future requests</label></div></div>
     <label for="fnotes" id="lnotes">Notes for the inspector</label><textarea id="fnotes"></textarea>
     <button class="big" type="submit" id="fsend">SEND REQUEST</button>
     <div class="err" id="ferr"></div>
@@ -189,6 +194,7 @@ function openForm(mode,job){
   $("fsub").textContent=job?`${job.address} · Permit ${job.permit||""}`:"New job";
   $("ldate").textContent={req:"Date needed",rs:"New date",cx:"Date it was scheduled for"}[mode];
   if(mode==="cx"){const x=INSP.find(i=>i.job_id===job.id&&!i.result&&!isPlaceholder(i));if(x&&x.scheduled_date)$("fdate").value=x.scheduled_date}
+  $("remail").value=ME.result_email||"";$("rphone").value=ME.result_phone||ME.phone||"";$("rsave").checked=false;$("sendwrap").hidden=mode==="cx";
   $("winwrap").hidden=mode==="cx";$("urgwrap").hidden=mode==="cx";$("phwrap").hidden=mode==="cx";
   $("lnotes").textContent=mode==="cx"?"Reason (optional)":"Notes for the inspector";
   $("fsend").textContent={req:"SEND REQUEST",rs:"SEND NEW DATE",cx:"SEND CANCELLATION"}[mode];$("fsend").classList.toggle("red",mode==="cx");$("fsend").disabled=false;
@@ -214,7 +220,7 @@ $("ff").onsubmit=async e=>{e.preventDefault();$("ferr").textContent="";
   const county=job?(job.county||"Monroe"):$("fcounty").value;
   const row={client_id:ME.id,company:ME.company,name:ME.contact_name||"",phone:ME.phone||"",email:ME.email||null,county,area:job?job.area:$("farea").value,address:addr,permit,
     inspection:({req:"",rs:"RESCHEDULE: ",cx:"CANCEL: "}[mode])+insp,requested_date:$("fdate").value,time_window:mode==="cx"?null:$("fwin").value,urgent:mode!=="cx"&&$("furg").checked,
-    notes:$("fnotes").value.trim()||null,status:"new"};
+    notes:$("fnotes").value.trim()||null,status:"new",result_email:mode==="cx"?null:($("remail").value.trim()||null),result_phone:mode==="cx"?null:($("rphone").value.trim()||null)};
   const btn=$("fsend");btn.disabled=true;btn.textContent="SENDING…";
   try{
     if(mode!=="cx"&&PH.length){const folder="requests/"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));row.photos=[];
@@ -222,6 +228,7 @@ $("ff").onsubmit=async e=>{e.preventDefault();$("ferr").textContent="";
         const u=await sb.storage.from("files").upload(path,PH[i].blob,{contentType:"image/jpeg"});if(u.error)throw u.error;row.photos.push(path)}}
     btn.textContent="SENDING…";
     const r=await sb.from("requests").insert(row);if(r.error)throw r.error;
+    if(mode!=="cx"&&$("rsave").checked){const s=await sb.rpc("set_my_result_contact",{e:row.result_email,p:row.result_phone});if(!s.error){ME.result_email=row.result_email;ME.result_phone=row.result_phone}}
     try{fetch(NTFY,{method:"POST",headers:{"Title":(({req:"New request",rs:"Reschedule",cx:"Cancellation"}[mode])+": "+addr).replace(/[^\x20-\x7E]/g,""),"Priority":row.urgent||mode==="cx"?"high":"default","Tags":mode==="cx"?"x":mode==="rs"?"calendar":"clipboard","Click":"https://aftermathinspections.com/field/"},
       body:`${insp} - ${nice(row.requested_date)}${row.time_window?" ("+row.time_window+")":""}${row.urgent?" - TIME-SENSITIVE":""}\n${row.company||""} - ${row.name} ${row.phone}${row.photos?"\n"+row.photos.length+" photo(s)":""}`}).catch(()=>{})}catch(_){}
     $("sheet").hidden=true;toast({req:"Request sent. AIS will confirm.",rs:"New date sent. AIS will confirm.",cx:"Cancellation sent. AIS will confirm."}[mode]);load();

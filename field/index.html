@@ -330,7 +330,7 @@ function render(){
   const s=st(j.id), seq=seqOf(j.id);
   const tabs=[["info","Inspection"],["plans","Plans ("+j.sheets.length+")"],["photos","Photos ("+s.photos.length+")"],["notes","Notes"]];
   let pane="";
-  if(tab==="info")pane=`<dl class="kv"><dt>Permit</dt><dd style="font-family:var(--mono)">${j.permit}</dd><dt>Location</dt><dd>${loc(j)}</dd><dt>Scope</dt><dd>${esc(j.scope)}</dd><dt>Contractor</dt><dd>${esc(j.contractor)}<br><span style="font-family:var(--mono);font-size:14px">${j.cphone}</span></dd><dt>Owner</dt><dd>${esc(j.owner)}</dd></dl>
+  if(tab==="info")pane=`<dl class="kv"><dt>Permit</dt><dd style="font-family:var(--mono)">${j.permit}</dd><dt>Location</dt><dd>${loc(j)}</dd><dt>Scope</dt><dd>${esc(j.scope)}</dd><dt>Contractor</dt><dd>${esc(j.contractor)}<br><span style="font-family:var(--mono);font-size:14px">${j.cphone}</span></dd><dt>Owner</dt><dd>${esc(j.owner)}</dd>${j.resTo?`<dt>Send result to</dt><dd>${esc(j.resTo)}</dd>`:""}</dl>
     <div class="hist"><h3>Inspection history</h3>${j.hist.length?j.hist.map(h=>`<div class="hrow"><span>${h[0]}</span><span>${esc(h[1])}</span><span style="margin-left:auto;font-weight:600;color:var(--${h[2]==="Pass"?"pass":h[2]==="Fail"?"fail":"part"})">${h[2]}</span></div>`).join(""):`<p class="empty">First inspection on this permit.</p>`}</div>`;
   const upl=`<label class="upl">＋ Add plan sheets (PDF or photos)<input type="file" id="planup" accept="application/pdf,image/*" multiple></label><div class="upmsg" id="upmsg"></div>`;
   if(tab==="plans"&&!j.sheets.length)pane=`<p class="empty">No plans on this job yet.</p>${upl}`;
@@ -360,7 +360,7 @@ function render(){
      <button class="ghostbtn" id="pv">${s.preview?"Hide customer report":"Preview customer report"}</button>${s.preview?report():""}
      <button class="complete" id="complete" ${s.result&&(!needsFix(s.result)||corrList.length)?"":"disabled"}>${s.deliver==="send"?"COMPLETE &amp; SEND":"COMPLETE INSPECTION"}</button>
      ${needsFix(s.result)&&!corrList.length?`<p class="hint">Write at least one correction to complete a ${RL[s.result].toLowerCase()} inspection.</p>`:""}
-     <div class="rowbtns"><button class="reopen" id="reschinsp">Reschedule</button><button class="reopen cxl" id="cancelinsp" style="margin-top:0">Cancel this inspection</button></div>`;
+     <div class="rowbtns"><button class="reopen" id="reschinsp">Reschedule</button><button class="reopen cxl" id="cancelinsp" style="margin-top:0">Cancel this inspection</button><button class="reopen cxl" id="delinsp" style="margin-top:0;margin-left:auto">Delete (test or mistake)</button></div>`;
   el.innerHTML=`<button class="back" id="back">‹ All inspections</button>
    <div class="dh"><h2>${esc(j.addr)}, ${esc(j.key)}</h2><span class="meta">Permit <b>${j.permit}</b></span><span class="meta">Stop ${seq} of ${JOBS.length}</span></div>
    <div class="acts"><a class="dir" href="https://maps.apple.com/?daddr=${encodeURIComponent(j.addr+", "+j.key+", FL")}" target="_blank" rel="noopener">Directions</a><a class="dir alt" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(j.addr+", "+j.key+", FL")}" target="_blank" rel="noopener">Google Maps</a><span class="win big${j.urgent?" urgent":""}">${esc(j.win)}</span></div>
@@ -431,6 +431,11 @@ function render(){
     const win=d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · "+(String(j.win).split(" · ").pop()||"Anytime");
     const{error}=await sb.from("inspections").update({scheduled_date:iso,time_window:win}).eq("id",j.id);if(error)return toast("Couldn't move it: "+error.message);
     toast("Moved to "+d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}));load()};
+  const dl=$("#delinsp"); if(dl)dl.onclick=async()=>{if(!confirm("Delete this inspection completely? Use this only for tests or mistakes. It can't be undone."))return;
+    const id=j.id;const{error}=await sb.from("inspections").delete().eq("id",id);if(error)return toast("Couldn't delete: "+error.message);
+    const left=(RAW.insp||[]).filter(x=>x.job_id===j.jobId&&x.id!==id&&!x.result&&!x.done_at);
+    if(!left.length)await sb.from("inspections").insert({job_id:j.jobId,name:"Next inspection: not scheduled yet"});
+    delete Q[id];cur=null;document.body.classList.remove("open");toast("Inspection deleted");load()};
   const cx=$("#cancelinsp"); if(cx)cx.onclick=()=>{const why=prompt("Cancel this inspection?\n\nReason (optional), e.g. Contractor not ready:");if(why===null)return;
     s.result="cancelled";s.done=true;s.doneAt=Date.now();s.deliver="file";s.notes=(s.notes?s.notes+"\n":"")+"CANCELLED "+new Date().toLocaleDateString("en-US")+(why.trim()?": "+why.trim():"");save();toast("Inspection cancelled");planRoute();cur=null;document.body.classList.remove("open");render()};
   const ro=$("#reopen"); if(ro)ro.onclick=()=>{s.done=false;s.doneAt=null;save();planRoute();render()};
@@ -522,6 +527,7 @@ function reqHTML(){const R=(RAW&&RAW.reqs)||[];if(!R.length)return"";
    <div class="rm">${esc(r.inspection||"")} · ${r.requested_date?new Date(r.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):""} · ${esc(r.time_window||"")}${r.urgent?" · <b style='color:var(--fail)'>TIME-SENSITIVE</b>":""}</div>
    <div class="rm">${esc(r.company||"")} · ${esc(r.name||"")} · ${esc(r.phone||"")} · Permit ${esc(r.permit||"")}</div>
    ${(r.photos||[]).length?`<div class="rph">${r.photos.map((p,i)=>REQIMG[p]?`<span class="delfig"><a href="${REQIMG[p]}" target="_blank" rel="noopener"><img src="${REQIMG[p]}" alt="Contractor photo ${i+1}"></a><button class="phdel" data-rphdel="${r.id}|${p}" aria-label="Delete photo ${i+1}">×</button></span>`:`<span class="phload">Photo ${i+1}…</span>`).join("")}</div>`:""}
+   ${r.result_email||r.result_phone?`<div class="rm">Result to: ${esc([r.result_email,r.result_phone].filter(Boolean).join(" · "))}</div>`:""}
    ${r.notes||r.gate_code?`<div class="rn">${r.gate_code?"Gate: "+esc(r.gate_code)+". ":""}${esc(r.notes||"")}</div>`:""}
    <div class="rb2"><button class="acc" data-acc="${r.id}">${cx?"Cancel it on my schedule":rs?"Move it to the new date":"Add to my schedule"}</button><button data-dis="${r.id}">Dismiss</button></div></div>`}).join("")}</div>`}
 function bindReq(){
@@ -540,7 +546,7 @@ async function acceptReq(id,btn){const r=RAW.reqs.find(x=>x.id===id);if(!r)retur
         side:(r.county&&r.county!=="Monroe")?"mainland":null,jurisdiction:r.county==="Collier"?"Collier County GMCD":r.county==="Lee"?"Lee County":"Monroe County"}).select().single();
       if(ins.error)throw ins.error;job=ins.data}
     const win=(r.requested_date?new Date(r.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · ":"")+(r.time_window||"Anytime");
-    const fields={code,name,scheduled_date:r.requested_date,time_window:win,urgent:!!r.urgent,notes:[r.name&&("Requested by "+r.name+", "+r.phone),r.notes].filter(Boolean).join(". ")||null};
+    const fields={result_email:r.result_email||null,result_phone:r.result_phone||null,code,name,scheduled_date:r.requested_date,time_window:win,urgent:!!r.urgent,notes:[r.name&&("Requested by "+r.name+", "+r.phone),r.notes].filter(Boolean).join(". ")||null};
     const ph=(RAW.insp||[]).find(i=>i.job_id===job.id&&!i.result&&!i.done_at&&!i.code&&!i.scheduled_date);
     const res=ph?await sb.from("inspections").update(fields).eq("id",ph.id):await sb.from("inspections").insert({job_id:job.id,...fields}).select().single();
     if(res.error)throw res.error;
@@ -582,7 +588,7 @@ function build(){const now=Date.now(),jobs=RAW.jobs||[],ins=RAW.insp||[],shs=RAW
       const hist=mine.filter(h=>h.id!==i.id&&h.result&&!(h.done_at&&sameDay(h.done_at,now))).map(h=>[dstr(h.done_at||h.scheduled_date),[h.code,h.name].filter(Boolean).join(" ")||"Inspection",RS[h.result]||h.result]);
       JOBS.push({id:i.id,jobId:jb.id,addr:jb.address,key:jb.area||"",mm:+jb.mm||0,side,county:jb.county||"",permit:jb.permit||"",jur:jb.jurisdiction||"",code:i.code||"",name:i.name||"Inspection",
         contractor:jb.contractor||"",cphone:jb.contractor_phone||"",owner:jb.owner_name||"",win:i.time_window||jb.time_window||"Anytime",urgent:!!i.urgent,gate:jb.gate_code||"",cnote:jb.notes||"",
-        scope:jb.scope||"",hist,rev:jb.plan_rev||"",links:jb.plan_links||{},dets:jb.plan_dets||{},sheets:sheets.map(x=>x)});
+        scope:jb.scope||"",hist,resTo:[i.result_email,i.result_phone].filter(Boolean).join(" · "),rev:jb.plan_rev||"",links:jb.plan_links||{},dets:jb.plan_dets||{},sheets:sheets.map(x=>x)});
       const q=Q[i.id]||{};const pick=(k,d)=>q[k]!==undefined?q[k]:d;
       const prev=S[i.id]||{};
       S[i.id]={result:pick("result",i.result),notes:pick("notes",i.notes||""),corr:pick("corrections",i.corrections||""),deliver:pick("delivery",i.delivery||"file"),

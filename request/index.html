@@ -111,6 +111,9 @@
         <div class="full cxhide"><label>Photos <span>(optional: concealed work, before it's covered, up to 10)</span></label>
           <label class="pickph">＋ Add photos<input type="file" id="ph" accept="image/*" multiple></label>
           <div class="phs" id="phs"></div></div>
+        <div class="full cxhide"><label for="remail">Send the result to: email</label><input id="remail" type="email" autocomplete="email" autocapitalize="off"></div>
+        <div class="full cxhide"><label for="rphone">Send the result to: phone (text)</label><input id="rphone" type="tel" autocomplete="tel">
+          <label class="check"><input id="rsave" type="checkbox" checked> Remember on this phone</label></div>
         <div class="full reqonly"><label for="gate">Gate code / lockbox <span>(optional)</span></label><input id="gate"></div>
         <div class="full"><label for="notes" id="lab_notes">Instructions for the inspector <span>(where on the property, dogs, who to call)</span></label><textarea id="notes"></textarea></div>
       </div>
@@ -169,7 +172,7 @@
   if(qs.get("permit"))$('permit').value=qs.get("permit");
   const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const t=new Date(); t.setDate(t.getDate()+1); $('date').min=ymd(new Date()); $('date').value=ymd(t);
-  try{["company","name","phone","email"].forEach(k=>{const v=localStorage.getItem("ais-req-"+k);if(v)$(k).value=v})}catch(e){}
+  try{["company","name","phone","email","remail","rphone"].forEach(k=>{const v=localStorage.getItem("ais-req-"+k);if(v)$(k).value=v})}catch(e){}
   if(qs.get("company")&&!$('company').value)$('company').value=qs.get("company");
 
   $('f').addEventListener('submit',async e=>{
@@ -180,7 +183,9 @@
     const row={company:$('company').value.trim(),name:$('name').value.trim(),phone:$('phone').value.trim(),email:$('email').value.trim()||null,
       county:$('county').value,area:$('key').value,address:$('addr').value.trim(),permit:$('permit').value.trim().toUpperCase(),
       inspection:({req:"",rs:"RESCHEDULE: ",cx:"CANCEL: "}[MODE])+$('insp').value.trim(),requested_date:$('date').value,time_window:$('win').value,urgent:$('urgent').checked,
-      gate_code:$('gate').value.trim()||null,notes:$('notes').value.trim()||null};
+      gate_code:$('gate').value.trim()||null,notes:$('notes').value.trim()||null,
+      result_email:CX?null:($('remail').value.trim()||null),result_phone:CX?null:($('rphone').value.trim()||null)};
+    try{if($('rsave').checked){localStorage.setItem('ais-req-remail',$('remail').value);localStorage.setItem('ais-req-rphone',$('rphone').value)}}catch(e){}
     const btn=$('sendbtn'),after=$('after');btn.disabled=true;btn.textContent="SENDING…";
     try{
       if(!CX&&PH.length){const folder="requests/"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));row.photos=[];
