@@ -82,8 +82,8 @@
     <fieldset>
       <legend>Inspection needed</legend>
       <div class="grid">
-        <div class="full"><label for="insp">Inspection type <span>(tap to pick, or type it)</span></label><input id="insp" list="codes" required>
-          <datalist id="codes"></datalist></div>
+        <div class="full"><label for="inspsel">Inspection type</label><select id="inspsel"></select><input id="insp" placeholder="Type the inspection, e.g. 108 Framing" style="margin-top:8px" hidden>
+          </div>
         <div><label for="date">Requested date</label><input id="date" type="date" required></div>
         <div><label for="win">Time window</label>
           <select id="win"><option>Anytime</option><option>First thing AM</option><option>Before noon</option><option>Afternoon</option></select></div>
@@ -126,10 +126,13 @@
     $('county').value=c;
     $('key').innerHTML=AREAS[c].map(a=>`<option>${a}</option>`).join("");
     if(keep&&AREAS[c].includes(keep))$('key').value=keep;
-    $('codes').innerHTML=CODES[c].map(x=>`<option value="${x}"></option>`).join("");
+    const L=CODES[c];
+    $('inspsel').innerHTML=`<option value="">${L.length?"Tap to choose an inspection":"Type the inspection below"}</option>`+L.map(x=>`<option>${x}</option>`).join("")+`<option value="__other">Other / not on the list</option>`;
+    $('inspsel').hidden=!L.length; $('insp').hidden=!!L.length; $('insp').value="";
     const n=NOTE[c];$('deadline').hidden=!n;$('deadline').innerHTML=n||"";
   }
   $('county').onchange=()=>setCounty($('county').value);
+  $('inspsel').onchange=()=>{const v=$('inspsel').value;if(v==="__other"){$('insp').hidden=false;$('insp').value="";$('insp').focus()}else{$('insp').hidden=true;$('insp').value=v}};
   setCounty(AREAS[qs.get("county")]?qs.get("county"):"Monroe",qs.get("area"));
   if(qs.get("addr"))$('addr').value=qs.get("addr");
   if(qs.get("permit"))$('permit').value=qs.get("permit");
@@ -141,7 +144,7 @@
   $('f').addEventListener('submit',async e=>{
     e.preventDefault();
     const need=["company","name","phone","addr","permit","insp","date"].filter(k=>!$(k).value.trim());
-    if(need.length){const el=$(need[0]);el.focus();el.setCustomValidity("Required");el.reportValidity();el.setCustomValidity("");return}
+    if(need.length){const el=(need[0]==="insp"&&$('insp').hidden)?$('inspsel'):$(need[0]);el.focus();el.setCustomValidity("Required");el.reportValidity();el.setCustomValidity("");return}
     try{["company","name","phone","email"].forEach(k=>localStorage.setItem("ais-req-"+k,$(k).value))}catch(e){}
     const row={company:$('company').value.trim(),name:$('name').value.trim(),phone:$('phone').value.trim(),email:$('email').value.trim()||null,
       county:$('county').value,area:$('key').value,address:$('addr').value.trim(),permit:$('permit').value.trim().toUpperCase(),
@@ -154,7 +157,7 @@
       const d=new Date(row.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
       after.className="after ok";after.innerHTML=`<b>Request received.</b> ${row.inspection} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`;
       after.hidden=false;btn.textContent="SENT ✓";
-      ["insp","gate","notes"].forEach(k=>$(k).value="");$('urgent').checked=false;
+      ["insp","gate","notes"].forEach(k=>$(k).value="");$('inspsel').value="";if(CODES[row.county].length)$('insp').hidden=true;$('urgent').checked=false;
       setTimeout(()=>{btn.disabled=false;btn.textContent="SEND ANOTHER REQUEST"},2500);
     }catch(err){
       const body=Object.entries(row).map(([k,v])=>k+": "+(v??"-")).join("\n");
