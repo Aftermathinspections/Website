@@ -536,7 +536,7 @@ async function acceptReq(id,btn){const r=RAW.reqs.find(x=>x.id===id);if(!r)retur
     const m=String(r.inspection||"").match(/^\s*(\d{3})\s*[-·:]?\s*(.*)$/);const code=m?m[1]:null,name=(m?m[2]:r.inspection)||"Inspection";
     const norm=x=>String(x||"").replace(/\s+/g,"").toUpperCase();
     let job=(RAW.jobs||[]).find(j=>r.permit&&norm(j.permit)===norm(r.permit));
-    if(!job){const ins=await sb.from("jobs").insert({address:r.address,area:r.area,county:r.county||"Monroe",permit:r.permit,contractor:r.company,contractor_phone:r.phone,gate_code:r.gate_code,notes:r.notes,
+    if(!job){const ins=await sb.from("jobs").insert({client_id:r.client_id||null,address:r.address,area:r.area,county:r.county||"Monroe",permit:r.permit,contractor:r.company,contractor_phone:r.phone,gate_code:r.gate_code,notes:r.notes,
         side:(r.county&&r.county!=="Monroe")?"mainland":null,jurisdiction:r.county==="Collier"?"Collier County GMCD":r.county==="Lee"?"Lee County":"Monroe County"}).select().single();
       if(ins.error)throw ins.error;job=ins.data}
     const win=(r.requested_date?new Date(r.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · ":"")+(r.time_window||"Anytime");
