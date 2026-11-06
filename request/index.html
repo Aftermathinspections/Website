@@ -43,6 +43,12 @@
   .after.ok{border-left:6px solid #1F6B3A}.after.bad{border-left:6px solid #A3262A}
   .deadline{background:#FBF3DF;border:1px solid #E7D3A1;padding:10px 12px;font-size:14.5px}
   .send:disabled{opacity:.6}
+  .pickph{display:inline-flex;align-items:center;min-height:48px;padding:0 18px;border:1px solid #1C1C1E;background:#fff;font-weight:600;cursor:pointer}
+  .pickph input{display:none}
+  .phs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .phs figure{margin:0;position:relative;width:84px;height:84px}
+  .phs img{width:84px;height:84px;object-fit:cover;border:1px solid var(--line);display:block}
+  .phs button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:#111;color:#fff;font-weight:700;cursor:pointer}
   .mode{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 0 22px}
   .mode button{min-height:50px;border:2px solid var(--maroon);background:#fff;color:var(--maroon);font-family:Archivo,Arial,sans-serif;font-weight:700;font-size:15px;cursor:pointer}
   .mode button[aria-pressed="true"]{background:var(--maroon);color:#fff}
@@ -102,6 +108,9 @@
     <fieldset>
       <legend id="leg_site">Site access</legend>
       <div class="grid">
+        <div class="full cxhide"><label>Photos <span>(optional: concealed work, before it's covered, up to 10)</span></label>
+          <label class="pickph">＋ Add photos<input type="file" id="ph" accept="image/*" multiple></label>
+          <div class="phs" id="phs"></div></div>
         <div class="full reqonly"><label for="gate">Gate code / lockbox <span>(optional)</span></label><input id="gate"></div>
         <div class="full"><label for="notes" id="lab_notes">Instructions for the inspector <span>(where on the property, dogs, who to call)</span></label><textarea id="notes"></textarea></div>
       </div>
@@ -137,6 +146,11 @@
     $('leg_site').textContent=CX?"Reason":"Site access";
     $('lab_notes').innerHTML=m==="req"?"Instructions for the inspector <span>(where on the property, dogs, who to call)</span>":m==="rs"?"Reason / notes <span>(optional)</span>":"Reason for cancelling <span>(optional)</span>";
     $('sendbtn').textContent=BTN[m];$('after').hidden=true;$('after').className="after"}
+  let PH=[];
+  function shrink(file,max=2000){return new Promise(res=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),"image/jpeg",.82)};im.onerror=()=>res(file);im.src=u})}
+  function drawPh(){$('phs').innerHTML=PH.map((p,i)=>`<figure><img src="${p.url}" alt="Photo ${i+1}"><button type="button" data-rm="${i}" aria-label="Remove photo ${i+1}">×</button></figure>`).join("");
+    $('phs').querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{URL.revokeObjectURL(PH[+b.dataset.rm].url);PH.splice(+b.dataset.rm,1);drawPh()})}
+  $('ph').onchange=async e=>{for(const f of [...e.target.files]){if(PH.length>=10)break;const blob=await shrink(f);PH.push({blob,url:URL.createObjectURL(blob)})}e.target.value="";drawPh()};
   $('m_req').onclick=()=>setMode("req");$('m_rs').onclick=()=>setMode("rs");$('m_cx').onclick=()=>setMode("cx");
   function setCounty(c,keep){
     $('county').value=c;
@@ -169,14 +183,20 @@
       gate_code:$('gate').value.trim()||null,notes:$('notes').value.trim()||null};
     const btn=$('sendbtn'),after=$('after');btn.disabled=true;btn.textContent="SENDING…";
     try{
+      if(!CX&&PH.length){const folder="requests/"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));row.photos=[];
+        for(let i=0;i<PH.length;i++){btn.textContent=`UPLOADING PHOTO ${i+1} OF ${PH.length}…`;const path=`${folder}/${i+1}.jpg`;
+          const u=await fetch(SB_URL+"/storage/v1/object/files/"+path,{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"image/jpeg","x-upsert":"false"},body:PH[i].blob});
+          if(!u.ok)throw new Error("photo "+u.status);row.photos.push(path)}
+        btn.textContent="SENDING…"}
       const r=await fetch(SB_URL+"/rest/v1/requests",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify(row)});
       if(!r.ok)throw new Error("status "+r.status);
       const d=new Date(row.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
       after.className="after ok";after.innerHTML=MODE==="rs"?`<b>New date sent.</b> ${row.inspection.replace(/^RESCHEDULE:\s*/,"")} at ${row.address}, moved to ${d}. The inspector will confirm with you at ${row.phone}.`:CX?`<b>Cancellation sent.</b> ${row.inspection.replace(/^CANCEL:\s*/,"")} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`:`<b>Request received.</b> ${row.inspection} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`;
       after.hidden=false;btn.textContent="SENT ✓";
-      ["insp","gate","notes"].forEach(k=>$(k).value="");$('inspsel').value="";if(CODES[row.county].length)$('insp').hidden=true;$('urgent').checked=false;
+      ["insp","gate","notes"].forEach(k=>$(k).value="");PH.forEach(p=>URL.revokeObjectURL(p.url));PH=[];drawPh();$('inspsel').value="";if(CODES[row.county].length)$('insp').hidden=true;$('urgent').checked=false;
       setTimeout(()=>{btn.disabled=false;btn.textContent=BTN[MODE]},2500);
     }catch(err){
+      delete row.photos;
       const body=Object.entries(row).map(([k,v])=>k+": "+(v??"-")).join("\n");
       after.className="after bad";after.innerHTML=`<b>That didn't go through.</b> Check your signal and tap Send again. Or <a href="mailto:Luigi@aftermathinspections.com?subject=${encodeURIComponent("Inspection Request: "+row.address+" | "+row.inspection)}&body=${encodeURIComponent(body)}">email the request instead</a>.`;
       after.hidden=false;btn.disabled=false;btn.textContent=BTN[MODE];
