@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Request an Inspection | Aftermath Inspection Services</title>
-<meta name="description" content="Request a private provider inspection from Aftermath Inspection Services LLC. Key West to Big Pine Key.">
+<meta name="description" content="Request a private provider inspection from Aftermath Inspection Services LLC.">
 <meta name="theme-color" content="#111111">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,6 +40,9 @@
   .send:hover,.send:focus-visible{background:var(--maroon-dk)}
   .after{margin-top:16px;background:#fff;border:1px solid var(--line);padding:14px 16px;font-size:14.5px}
   .after b{font-family:Archivo,Arial,sans-serif}
+  .after.ok{border-left:6px solid #1F6B3A}.after.bad{border-left:6px solid #A3262A}
+  .deadline{background:#FBF3DF;border:1px solid #E7D3A1;padding:10px 12px;font-size:14.5px}
+  .send:disabled{opacity:.6}
   footer{border-top:1px solid var(--line);padding-block:20px 34px;color:var(--mute);font-size:13px}
   a{color:var(--maroon)}
 </style>
@@ -52,7 +55,7 @@
 </header>
 
 <main class="wrap">
-  <p class="lede">Fill this out and tap Send. Your email app opens with the request ready to go to <b>requests@aftermathinspections.com</b>.</p>
+  <p class="lede">Fill this out and tap <b>Send request</b>. It goes straight to the inspector's schedule, and you'll see a confirmation on this screen.</p>
 
   <form id="f" novalidate>
     <fieldset>
@@ -69,28 +72,23 @@
       <legend>The job</legend>
       <div class="grid">
         <div class="full"><label for="addr">Job address</label><input id="addr" autocomplete="street-address" required></div>
-        <div><label for="key">Key / area</label>
-          <select id="key"><option>Key West</option><option>Stock Island</option><option>Big Coppitt Key</option><option>Rockland / Saddlebunch</option><option>Sugarloaf Key</option><option>Cudjoe Key</option><option>Summerland Key</option><option>Ramrod Key</option><option>Little Torch Key</option><option>Big Pine Key</option><option>Other</option></select></div>
-        <div><label for="permit">Permit number</label><input id="permit" required></div>
+        <div><label for="county">County</label>
+          <select id="county"><option>Monroe</option><option>Collier</option><option>Lee</option></select></div>
+        <div><label for="key">City / area</label><select id="key"></select></div>
+        <div class="full"><label for="permit">Permit number</label><input id="permit" required autocapitalize="characters"></div>
       </div>
     </fieldset>
 
     <fieldset>
       <legend>Inspection needed</legend>
       <div class="grid">
-        <div class="full"><label for="insp">Inspection type <span>(code and name, e.g. 175 Sheathing)</span></label><input id="insp" list="codes" required>
-          <datalist id="codes">
-            <option value="115 Foundation / Footers / Pilings / Augers"></option><option value="120 Slab"></option><option value="125 Lintel / Tie Beams / Grade Beams"></option>
-            <option value="135 Truss"></option><option value="150 Window / Door Framing"></option><option value="165 Roof / Wall Dry-in"></option><option value="175 Sheathing"></option>
-            <option value="191 Framing"></option><option value="199 Final Building"></option><option value="200 Roof Dry-in"></option><option value="210 Roof in Progress"></option>
-            <option value="294 Final Roof"></option><option value="305 Rough Electric / Ground Bond"></option><option value="399 Final Electric"></option>
-            <option value="405 Rough-in Mechanical"></option><option value="499 Final Mechanical"></option><option value="605 Rough-in Plumbing"></option><option value="699 Final Plumbing"></option>
-            <option value="240 Impact Covering Installation"></option><option value="293 Final Impact Resistant"></option>
-          </datalist></div>
+        <div class="full"><label for="insp">Inspection type <span>(tap to pick, or type it)</span></label><input id="insp" list="codes" required>
+          <datalist id="codes"></datalist></div>
         <div><label for="date">Requested date</label><input id="date" type="date" required></div>
         <div><label for="win">Time window</label>
           <select id="win"><option>Anytime</option><option>First thing AM</option><option>Before noon</option><option>Afternoon</option></select></div>
         <div class="full"><label class="check"><input id="urgent" type="checkbox"> Time-sensitive (concrete pour, crane, inspection holding up work)</label></div>
+        <div class="full deadline" id="deadline" hidden></div>
       </div>
     </fieldset>
 
@@ -102,35 +100,68 @@
       </div>
     </fieldset>
 
-    <button class="send" type="submit">SEND REQUEST</button>
-    <div class="after" id="after" hidden>
-      <b>Your email app should be open with the request.</b> Tap send there to finish. If nothing opened, email the same details to <b>requests@aftermathinspections.com</b> or call <b>305-434-5884</b>.
-    </div>
+    <button class="send" type="submit" id="sendbtn">SEND REQUEST</button>
+    <div class="after" id="after" hidden></div>
   </form>
 </main>
 
-<footer><div class="wrap">Aftermath Inspection Services LLC · Private Provider under F.S. §553.791 · Key West to Big Pine Key · <a href="/">Home</a></div></footer>
+<footer><div class="wrap">Aftermath Inspection Services LLC · Private Provider under F.S. §553.791 · Monroe, Collier and Lee counties · <a href="/">Home</a></div></footer>
 
 <script>
+  const SB_URL="https://lfihnfgrkrxdxzmeuyph.supabase.co", SB_KEY="sb_publishable_ewvQxbyA7lEuC0tTfZZfvg_LtAm5TGd";
   const $=id=>document.getElementById(id);
-  const t=new Date(); t.setDate(t.getDate()+1); $('date').min=new Date().toISOString().slice(0,10); $('date').value=t.toISOString().slice(0,10);
+  const AREAS={
+    Monroe:["Key West","Stock Island","Big Coppitt Key","Rockland / Saddlebunch","Sugarloaf Key","Cudjoe Key","Summerland Key","Ramrod Key","Little Torch Key","Big Pine Key","Other"],
+    Collier:["Everglades City","Chokoloskee","Copeland","Plantation Island","Immokalee","Naples","Marco Island","Golden Gate","Ave Maria","Other"],
+    Lee:["Fort Myers","Cape Coral","Fort Myers Beach","Bonita Springs","Estero","Lehigh Acres","Sanibel","Pine Island","North Fort Myers","Other"]};
+  const CODES={
+    Monroe:["115 Foundation / Footers / Pilings / Augers","120 Slab","125 Lintel / Tie Beams / Grade Beams","135 Truss","150 Window / Door Framing","165 Roof / Wall Dry-in","175 Sheathing","191 Framing","199 Final Building","200 Roof Dry-in","210 Roof in Progress","294 Final Roof","240 Impact Covering Installation","293 Final Impact Resistant","305 Rough Electric / Ground Bond","399 Final Electric","405 Rough-in Mechanical","499 Final Mechanical","605 Rough-in Plumbing","699 Final Plumbing"],
+    Collier:["100 Footings (incl. utility footing rebar)","101 Pile Caps","102 Grade Beam","103 Floating Slab","104 Tie Beam","105 Shear Wall","106 Columns","107 Trusses / Roof Ply / W&D Bucks","108 Framing","109 Insulation","110 Tie Down - Building","111 Dry-in / Flashing","112 Flood Proof","115 Building Final","118 Lintel Beam","119 Fill Cells","120 Flood Vent Relief","124 Steel in Stair / Columns","133 Monolithic Slab","134 Roofing Final","135 Shutter Final","136 Impact Glass","139 Termite Baiting","140 Interior Termite","141 Interior Slab Infill","151 Shear Wall - Nailing","152 Shear Wall - Water Barrier","153 Shear Wall - Lath","165 Window/Door Replacement Non-Impact","166 Window/Door Replacement Impact","169 Re-roof Dry-in / Flashing","170 Re-roof Final","171 Remodel Res Framing","172 Remodel Residential Building Final","175 Screen Cage Building Final","176 Solar Tie Down"],
+    Lee:[]};
+  const NOTE={
+    Collier:"Collier County: send requests by <b>12 noon the business day before</b>. The inspector has to post the inspection on the GMCD portal by 2 PM the day before.",
+    Lee:"Lee County: send requests by <b>12 noon the business day before</b>. Type the inspection name if it isn't in the list."};
+  const qs=new URLSearchParams(location.search);
+  function setCounty(c,keep){
+    $('county').value=c;
+    $('key').innerHTML=AREAS[c].map(a=>`<option>${a}</option>`).join("");
+    if(keep&&AREAS[c].includes(keep))$('key').value=keep;
+    $('codes').innerHTML=CODES[c].map(x=>`<option value="${x}"></option>`).join("");
+    const n=NOTE[c];$('deadline').hidden=!n;$('deadline').innerHTML=n||"";
+  }
+  $('county').onchange=()=>setCounty($('county').value);
+  setCounty(AREAS[qs.get("county")]?qs.get("county"):"Monroe",qs.get("area"));
+  if(qs.get("addr"))$('addr').value=qs.get("addr");
+  if(qs.get("permit"))$('permit').value=qs.get("permit");
+  const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const t=new Date(); t.setDate(t.getDate()+1); $('date').min=ymd(new Date()); $('date').value=ymd(t);
   try{["company","name","phone","email"].forEach(k=>{const v=localStorage.getItem("ais-req-"+k);if(v)$(k).value=v})}catch(e){}
-  $('f').addEventListener('submit',e=>{
+  if(qs.get("company")&&!$('company').value)$('company').value=qs.get("company");
+
+  $('f').addEventListener('submit',async e=>{
     e.preventDefault();
     const need=["company","name","phone","addr","permit","insp","date"].filter(k=>!$(k).value.trim());
-    if(need.length){$(need[0]).focus();$(need[0]).reportValidity&&$(need[0]).setCustomValidity("Required");$(need[0]).reportValidity();$(need[0]).setCustomValidity("");return}
+    if(need.length){const el=$(need[0]);el.focus();el.setCustomValidity("Required");el.reportValidity();el.setCustomValidity("");return}
     try{["company","name","phone","email"].forEach(k=>localStorage.setItem("ais-req-"+k,$(k).value))}catch(e){}
-    const d=new Date($('date').value+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
-    const subj=`Inspection Request: ${$('addr').value}, ${$('key').value} | ${$('insp').value} | ${d}${$('urgent').checked?" | TIME-SENSITIVE":""}`;
-    const body=[
-      "INSPECTION REQUEST","",
-      `Company: ${$('company').value}`,`Requested by: ${$('name').value}`,`Phone on site: ${$('phone').value}`,`Email: ${$('email').value}`,"",
-      `Address: ${$('addr').value}, ${$('key').value}`,`Permit: ${$('permit').value}`,"",
-      `Inspection: ${$('insp').value}`,`Date: ${d}`,`Time window: ${$('win').value}`,`Time-sensitive: ${$('urgent').checked?"YES":"No"}`,"",
-      `Gate / lockbox: ${$('gate').value||"-"}`,`Instructions: ${$('notes').value||"-"}`
-    ].join("\n");
-    location.href="mailto:requests@aftermathinspections.com?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
-    $('after').hidden=false;
+    const row={company:$('company').value.trim(),name:$('name').value.trim(),phone:$('phone').value.trim(),email:$('email').value.trim()||null,
+      county:$('county').value,area:$('key').value,address:$('addr').value.trim(),permit:$('permit').value.trim().toUpperCase(),
+      inspection:$('insp').value.trim(),requested_date:$('date').value,time_window:$('win').value,urgent:$('urgent').checked,
+      gate_code:$('gate').value.trim()||null,notes:$('notes').value.trim()||null};
+    const btn=$('sendbtn'),after=$('after');btn.disabled=true;btn.textContent="SENDING…";
+    try{
+      const r=await fetch(SB_URL+"/rest/v1/requests",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify(row)});
+      if(!r.ok)throw new Error("status "+r.status);
+      const d=new Date(row.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+      after.className="after ok";after.innerHTML=`<b>Request received.</b> ${row.inspection} at ${row.address}, ${d}. The inspector will confirm with you at ${row.phone}.`;
+      after.hidden=false;btn.textContent="SENT ✓";
+      ["insp","gate","notes"].forEach(k=>$(k).value="");$('urgent').checked=false;
+      setTimeout(()=>{btn.disabled=false;btn.textContent="SEND ANOTHER REQUEST"},2500);
+    }catch(err){
+      const body=Object.entries(row).map(([k,v])=>k+": "+(v??"-")).join("\n");
+      after.className="after bad";after.innerHTML=`<b>That didn't go through.</b> Check your signal and tap Send again. Or <a href="mailto:Luigi@aftermathinspections.com?subject=${encodeURIComponent("Inspection Request: "+row.address+" | "+row.inspection)}&body=${encodeURIComponent(body)}">email the request instead</a>.`;
+      after.hidden=false;btn.disabled=false;btn.textContent="SEND REQUEST";
+    }
+    after.scrollIntoView({behavior:"smooth",block:"center"});
   });
 </script>
 </body>

@@ -172,6 +172,12 @@ textarea{width:100%;min-height:180px;font:inherit;font-size:16px;padding:12px;bo
 .steps li b{display:inline-block;width:28px;color:var(--maroon);font-family:var(--display)}
 .steps li span{color:var(--mute);font-size:13px;margin-left:6px}
 .steps li.legrow{font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--maroon);font-weight:700;border-bottom:0;padding-top:14px}
+.reqbox{border:2px solid var(--maroon);background:#fff;padding:12px 14px;margin-bottom:6px}
+.reqbox h3{margin:0 0 8px;font-family:var(--display);font-size:13px;letter-spacing:.12em;color:var(--maroon)}
+.req{border-top:1px solid var(--line);padding:10px 0}.req:first-of-type{border-top:0}
+.req .ra{font-weight:700}.req .rm{font-size:13.5px;color:var(--mute);margin-top:2px}.req .rn{font-size:13.5px;margin-top:4px}
+.req .rb2{display:flex;gap:8px;margin-top:8px}.req .rb2 button{min-height:44px;padding:0 14px;font-weight:700;cursor:pointer;border:1px solid var(--ink);background:#fff}
+.req .rb2 .acc{background:var(--maroon);color:#fff;border-color:var(--maroon)}
 .login{position:fixed;inset:0;z-index:100;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:20px}
 .login[hidden]{display:none}
 .login form{background:#fff;border:1px solid var(--line);padding:28px 24px;width:min(420px,100%)}
@@ -254,7 +260,7 @@ function chip(j){const s=st(j.id);if(!s.done)return '<span class="chip open">Ope
 function renderList(){
   const n=JOBS.filter(j=>st(j.id).done).length;
   $("#count").textContent=`${n} of ${JOBS.length} done`;
-  let html=`<div class="routebar"><button class="rbtn" id="showroute">Route map</button><button class="rbtn ghost" id="replan">Re-plan route</button></div>`, lastLeg=null;
+  let html=reqHTML()+`<div class="routebar"><button class="rbtn" id="showroute">Route map</button><button class="rbtn ghost" id="replan">Re-plan route</button></div>`, lastLeg=null;
   ORDER.forEach((o,i)=>{const j=J(o.id);
     if(o.leg!==lastLeg){html+=`<div class="leg">${esc(o.leg)}</div>`;lastLeg=o.leg}
     html+=`<button class="insp${st(j.id).done?" isdone":""}" data-id="${j.id}" aria-current="${cur===j.id}">
@@ -262,6 +268,7 @@ function renderList(){
     <span><span class="addr">${esc(j.addr)}</span><br><span class="key">${esc(j.key)} · ${loc(j)}</span>
     <span class="code">${j.code?`<b>${j.code}</b>`:""}<span>${esc(j.name)}</span></span><span class="rowchips">${chip(j)}${st(j.id).done?"":`<span class="win${j.urgent?" urgent":""}">${esc(j.win)}</span>${j.cnote?'<span class="hasnote">Note</span>':""}`}</span></span></button>`});
   $("#items").innerHTML=html;
+  bindReq();
   document.querySelectorAll(".insp").forEach(b=>b.onclick=()=>{cur=b.dataset.id;tab="info";sheet=0;zoom=1;PV=[{s:0,z:1},{s:1,z:1}];cmp=false;act=0;document.body.classList.add("open");render();window.scrollTo(0,0)});
   $("#showroute").onclick=()=>{cur=null;document.body.classList.add("open");render();window.scrollTo(0,0)};
   $("#replan").onclick=()=>{planRoute();cur=null;render();toast("Route re-planned from home base")};
@@ -493,6 +500,35 @@ async function uploadPlans(j,files){const msg=t=>{const m=$("#upmsg");if(m)m.tex
     msg(`${n} sheet${n>1?"s":""} added.`);toast(`${n} plan sheet${n>1?"s":""} added`);await load()
   }catch(e){console.error(e);msg("Upload stopped: "+(e.message||e)+". Check the connection and try again.")}}
 
+
+/* ---- contractor requests ---- */
+function reqHTML(){const R=(RAW&&RAW.reqs)||[];if(!R.length)return"";
+  return `<div class="reqbox"><h3>NEW REQUESTS (${R.length})</h3>${R.map(r=>`<div class="req"><div class="ra">${esc(r.address||"")}${r.area?", "+esc(r.area):""}</div>
+   <div class="rm">${esc(r.inspection||"")} · ${r.requested_date?new Date(r.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):""} · ${esc(r.time_window||"")}${r.urgent?" · <b style='color:var(--fail)'>TIME-SENSITIVE</b>":""}</div>
+   <div class="rm">${esc(r.company||"")} · ${esc(r.name||"")} · ${esc(r.phone||"")} · Permit ${esc(r.permit||"")}</div>
+   ${r.notes||r.gate_code?`<div class="rn">${r.gate_code?"Gate: "+esc(r.gate_code)+". ":""}${esc(r.notes||"")}</div>`:""}
+   <div class="rb2"><button class="acc" data-acc="${r.id}">Add to my schedule</button><button data-dis="${r.id}">Dismiss</button></div></div>`).join("")}</div>`}
+function bindReq(){
+  document.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>acceptReq(b.dataset.acc,b));
+  document.querySelectorAll("[data-dis]").forEach(b=>b.onclick=async()=>{if(!confirm("Dismiss this request?"))return;
+    const{error}=await sb.from("requests").update({status:"dismissed"}).eq("id",b.dataset.dis);if(error)return toast("Couldn't dismiss: "+error.message);toast("Request dismissed");load()})}
+async function acceptReq(id,btn){const r=RAW.reqs.find(x=>x.id===id);if(!r)return;btn.disabled=true;btn.textContent="Adding…";
+  try{
+    const m=String(r.inspection||"").match(/^\s*(\d{3})\s*[-·:]?\s*(.*)$/);const code=m?m[1]:null,name=(m?m[2]:r.inspection)||"Inspection";
+    const norm=x=>String(x||"").replace(/\s+/g,"").toUpperCase();
+    let job=(RAW.jobs||[]).find(j=>r.permit&&norm(j.permit)===norm(r.permit));
+    if(!job){const ins=await sb.from("jobs").insert({address:r.address,area:r.area,county:r.county||"Monroe",permit:r.permit,contractor:r.company,contractor_phone:r.phone,gate_code:r.gate_code,notes:r.notes,
+        side:(r.county&&r.county!=="Monroe")?"mainland":null,jurisdiction:r.county==="Collier"?"Collier County GMCD":r.county==="Lee"?"Lee County":"Monroe County"}).select().single();
+      if(ins.error)throw ins.error;job=ins.data}
+    const win=(r.requested_date?new Date(r.requested_date+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · ":"")+(r.time_window||"Anytime");
+    const fields={code,name,scheduled_date:r.requested_date,time_window:win,urgent:!!r.urgent,notes:[r.name&&("Requested by "+r.name+", "+r.phone),r.notes].filter(Boolean).join(". ")||null};
+    const ph=(RAW.insp||[]).find(i=>i.job_id===job.id&&!i.result&&!i.done_at&&!i.code&&!i.scheduled_date);
+    const res=ph?await sb.from("inspections").update(fields).eq("id",ph.id):await sb.from("inspections").insert({job_id:job.id,...fields});
+    if(res.error)throw res.error;
+    const u=await sb.from("requests").update({status:"scheduled"}).eq("id",id);if(u.error)throw u.error;
+    toast("Added to your schedule");await load()
+  }catch(e){console.error(e);toast("Couldn't add it: "+(e.message||e));btn.disabled=false;btn.textContent="Add to my schedule"}}
+
 /* ---- loading ---- */
 function build(){const now=Date.now(),jobs=RAW.jobs||[],ins=RAW.insp||[],shs=RAW.sheets||[],phs=RAW.photos||[];
   const keepCur=cur;JOBS=[];
@@ -513,7 +549,7 @@ function build(){const now=Date.now(),jobs=RAW.jobs||[],ins=RAW.insp||[],shs=RAW
   const byJob={};JOBS.forEach(x=>{if(byJob[x.jobId])x.sheets=byJob[x.jobId];else byJob[x.jobId]=x.sheets});
   cur=JOBS.find(x=>x.id===keepCur)?keepCur:null;
   planRoute();render();
-  if(!JOBS.length)$("#items").innerHTML+=`<p class="empty">No open inspections. New jobs show up here once they're added.</p>`;
+  if(!JOBS.length)$("#items").insertAdjacentHTML("beforeend",`<p class="empty">No open inspections. New jobs show up here once they're added.</p>`);
   loadPhotos();}
 async function loadPhotos(){
   for(const x of JOBS){const s=S[x.id];if(s._loaded)continue;s._loaded=true;
@@ -524,9 +560,9 @@ async function loadPhotos(){
 async function load(){
   try{
     if(!navigator.onLine)throw new Error("offline");
-    const [a,b,c,d]=await Promise.all([sb.from("jobs").select("*").eq("status","active"),sb.from("inspections").select("*"),sb.from("plan_sheets").select("*").order("idx"),sb.from("photos").select("*").order("created_at")]);
+    const [a,b,c,d,e2]=await Promise.all([sb.from("jobs").select("*").eq("status","active"),sb.from("inspections").select("*"),sb.from("plan_sheets").select("*").order("idx"),sb.from("photos").select("*").order("created_at"),sb.from("requests").select("*").eq("status","new").order("created_at")]);
     for(const r of [a,b,c,d])if(r.error)throw r.error;
-    RAW={jobs:a.data,insp:b.data,sheets:c.data,photos:d.data};try{localStorage.setItem("ais-cache",JSON.stringify(RAW))}catch(e){}
+    RAW={jobs:a.data,insp:b.data,sheets:c.data,photos:d.data,reqs:e2.error?[]:e2.data};try{localStorage.setItem("ais-cache",JSON.stringify(RAW))}catch(e){}
   }catch(e){console.warn(e);try{RAW=JSON.parse(localStorage.getItem("ais-cache")||"null")}catch(_){}
     if(!RAW){setSync("off","Can't reach the office database and nothing is saved on this iPad yet.");RAW={jobs:[],insp:[],sheets:[],photos:[]}}}
   Object.values(S).forEach(s=>s._loaded=false);
@@ -551,6 +587,7 @@ async function boot(){
   else{showLogin(true);setSync("","Sign in to load your inspections.")}
   if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
+setInterval(()=>{if(sb&&navigator.onLine&&$("#login").hidden&&document.visibilityState==="visible"&&!cur)load()},120000);
 function bootFail(){setSync("off","No connection. Open the app again once you have signal.")}
 render();
 
