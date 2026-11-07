@@ -78,6 +78,21 @@ textarea{min-height:84px}
 .sendbox{background:#fff;border:1px solid var(--line);padding:12px 14px;margin-top:16px}.sendbox b{font-family:var(--display)}.sendbox label:not(.check){margin-top:8px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--black);color:#fff;padding:12px 20px;font-weight:600;z-index:30;max-width:90vw}
 .toast[hidden]{display:none}
+.vrep{background:none;border:0;color:var(--maroon);text-decoration:underline;font-weight:600;font-size:13.5px;cursor:pointer;padding:0 0 0 8px;min-height:32px;white-space:nowrap}
+.rv{position:fixed;inset:0;z-index:26;background:rgba(0,0,0,.5);overflow:auto;padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom))}
+.rv[hidden]{display:none}
+.rvbox{max-width:720px;margin:0 auto;background:#fff;padding:18px;position:relative}
+.rvbox .close{position:absolute;top:6px;right:6px;background:none;border:0;font-size:28px;min-width:44px;min-height:44px;cursor:pointer}
+.rephead{display:flex;gap:12px;align-items:center;border-bottom:2px solid var(--maroon);padding:0 40px 10px 0;margin-bottom:12px;font-size:13px}
+.repdate{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;text-align:right}
+.rkv{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:14.5px;margin:0}.rkv dt{color:var(--mute)}.rkv dd{margin:0}
+.repres{margin:14px 0;padding:10px 14px;font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:.06em;color:#fff;background:var(--pass)}
+.repres.fail{background:var(--fail)}.repres.partial{background:var(--part)}.repres.corr{background:var(--slate)}.repres.cancelled{background:#777}
+.rvbox h3{font-family:var(--display);font-size:16px;margin:14px 0 8px}
+.rcorr{margin:0;padding-left:22px;line-height:1.5}.rcorr li{margin-bottom:6px}
+.rphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}.rphs figure{margin:0;border:1px solid var(--line)}.rphs img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#eee}.rphs figcaption{font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:4px 6px}
+.repnote{font-size:14px;color:var(--mute)}.repcert{font-size:14.5px;line-height:1.45;margin:14px 0 0}
+.repsig{margin-top:16px;font-size:13px;color:var(--mute);border-top:1px solid var(--line);padding-top:10px}
 .plansbtn{display:block;width:calc(100% - 32px);margin:0 16px 12px;min-height:46px;border:1px solid var(--slate);background:#fff;color:var(--slate);font-family:var(--display);font-weight:700;font-size:14.5px;letter-spacing:.04em;cursor:pointer}
 .pv{position:fixed;inset:0;z-index:25;background:#1b1b1b;display:flex;flex-direction:column;color:#ddd}
 .pv[hidden]{display:none}
@@ -151,6 +166,7 @@ textarea{min-height:84px}
   </form>
 </div></div>
 <div class="toast" id="toast" hidden></div>
+<div class="rv" id="rv" hidden role="dialog" aria-modal="true" aria-label="Inspection report"><div class="rvbox"><button class="close" id="rvclose" aria-label="Close report">×</button><div id="rvbody"></div></div></div>
 <div class="pv" id="pv" hidden role="dialog" aria-modal="true" aria-label="Plans">
   <div class="pvbar"><button id="pvclose" aria-label="Close plans">×</button><div class="t" id="pvtitle">Plans</div><button class="cmpt" id="pvcmp" aria-pressed="false">Compare</button></div>
   <div class="pvbody" id="pvbody"></div>
@@ -173,7 +189,7 @@ const RL={pass:"Pass",fail:"Fail",partial:"Partial",corr:"Corrections",cancelled
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const nice=s=>s?new Date(String(s).slice(0,10)+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):"";
 function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,3000)}
-let sb=null, ME=null, JOBS=[], INSP=[], REQS=[], PH=[], F={}, SHEETS=[], PV={list:[],P:[{s:0,z:1},{s:1,z:1}],cmp:false,act:0}, URLS={};
+let sb=null, ME=null, JOBS=[], INSP=[], REQS=[], PH=[], F={}, PHOTOS=[], SHEETS=[], PV={list:[],P:[{s:0,z:1},{s:1,z:1}],cmp:false,act:0}, URLS={};
 
 function shrink(file,max=2000){return new Promise(res=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),"image/jpeg",.82)};im.onerror=()=>res(file);im.src=u})}
 
@@ -182,8 +198,8 @@ async function load(){
   if(c.error||!c.data.length){$("jobs").innerHTML=`<p class="empty">Your account isn't linked to any jobs yet. Please contact Aftermath Inspection Services.</p>`;return}
   ME=c.data[0];
   $("who").innerHTML=`${esc((ME.company||"CLIENT").toUpperCase())}<span>Client ID ${esc(ME.client_no||"")}</span>`;
-  const [j,i,r,ps]=await Promise.all([sb.from("jobs").select("*").order("created_at"),sb.from("inspections").select("*"),sb.from("requests").select("*").eq("status","new").order("created_at"),sb.from("plan_sheets").select("id,job_id,idx,num,title,path").order("idx")]);
-  JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];SHEETS=(ps&&ps.data)||[];render();
+  const [j,i,r,ps,pp]=await Promise.all([sb.from("jobs").select("*").order("created_at"),sb.from("inspections").select("*"),sb.from("requests").select("*").eq("status","new").order("created_at"),sb.from("plan_sheets").select("id,job_id,idx,num,title,path").order("idx"),sb.from("photos").select("inspection_id,path").order("created_at")]);
+  JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];SHEETS=(ps&&ps.data)||[];PHOTOS=(pp&&pp.data)||[];render();
 }
 const isPlaceholder=x=>!x.code&&!x.scheduled_date&&!x.result;
 function render(){
@@ -199,10 +215,11 @@ function render(){
       ${pend.map(p=>`<div class="pend">Sent ${new Date(p.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}: ${esc(p.inspection.replace(/^(CANCEL|RESCHEDULE):\s*/,m=>m.startsWith("C")?"Cancel ":"Move "))}${p.requested_date?" for "+nice(p.requested_date):""}. Waiting for AIS to confirm.</div>`).join("")}
       <div class="acts"><button class="req" data-a="req" data-j="${jb.id}">Request</button><button data-a="rs" data-j="${jb.id}" ${open.length?"":"disabled style='opacity:.4'"}>Move</button><button class="cx" data-a="cx" data-j="${jb.id}" ${open.length?"":"disabled style='opacity:.4'"}>Cancel</button></div>
       ${(()=>{const n=SHEETS.filter(x=>x.job_id===jb.id&&x.path).length;return n?`<button class="plansbtn" data-plans="${jb.id}">View plans (${n} sheet${n>1?"s":""})</button>`:""})()}
-      ${done.length?`<details><summary>Inspection history (${done.length})</summary>${done.map(h=>`<div class="hrow"><span class="d">${esc(nice(h.done_at||h.scheduled_date))}</span><span>${esc([h.code,h.name].filter(Boolean).join(" "))}</span><span class="r ${h.result}">${RL[h.result]||esc(h.result)}</span></div>${(h.result==="fail"||h.result==="partial"||h.result==="corr")&&h.corrections?`<ol class="corrs">${h.corrections.split("\n").filter(x=>x.trim()).map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:""}`).join("")}</details>`:""}
+      ${done.length?`<details><summary>Inspection history (${done.length})</summary>${done.map(h=>`<div class="hrow"><span class="d">${esc(nice(h.done_at||h.scheduled_date))}</span><span>${esc([h.code,h.name].filter(Boolean).join(" "))}</span><span class="r ${h.result}">${RL[h.result]||esc(h.result)}</span>${h.result&&h.result!=="cancelled"?`<button class="vrep" data-rep="${h.id}">Report</button>`:""}</div>${(h.result==="fail"||h.result==="partial"||h.result==="corr")&&h.corrections?`<ol class="corrs">${h.corrections.split("\n").filter(x=>x.trim()).map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:""}`).join("")}</details>`:""}
     </div>`}).join("");
   document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>openForm(b.dataset.a,JOBS.find(j=>j.id===b.dataset.j)));
   document.querySelectorAll("[data-plans]").forEach(b=>b.onclick=()=>openPlans(b.dataset.plans));
+  document.querySelectorAll("[data-rep]").forEach(b=>b.onclick=()=>openReport(b.dataset.rep));
 }
 function codesFor(county){return CODES[county]||[]}
 function fillInsp(county,preset,limitTo){
@@ -238,6 +255,23 @@ function drawPh(){$("fphs").innerHTML=PH.map((p,i)=>`<figure><img src="${p.url}"
 $("fph").onchange=async e=>{for(const f of [...e.target.files]){if(PH.length>=10)break;const blob=await shrink(f);PH.push({blob,url:URL.createObjectURL(blob)})}e.target.value="";drawPh()};
 $("fclose").onclick=()=>$("sheet").hidden=true;
 $("newjob").onclick=()=>openForm("req",null);
+/* inspection report, same layout as the inspector's */
+const needsFixR=r=>r==="fail"||r==="partial"||r==="corr";
+async function openReport(id){const h=INSP.find(x=>x.id===id);if(!h)return;const jb=JOBS.find(x=>x.id===h.job_id)||{};
+  const dt=new Date(h.done_at||(h.scheduled_date+"T12:00"));const corr=(h.corrections||"").split("\n").map(x=>x.trim()).filter(Boolean);
+  const ph=needsFixR(h.result)?PHOTOS.filter(p=>p.inspection_id===h.id):[];
+  $("rvbody").innerHTML=`<div class="rephead"><span class="mark">AIS</span><div><b>AFTERMATH INSPECTION SERVICES LLC</b><br>Private Provider Inspection Report</div><span class="repdate">${h.report_no?"Report #"+esc(h.report_no)+"<br>":""}${dt.toLocaleDateString("en-US")}</span></div>
+    <dl class="rkv"><dt>Permit</dt><dd>${esc(jb.permit||"")}</dd><dt>Site address</dt><dd>${esc(jb.address||"")}${jb.area?", "+esc(jb.area):""}, FL</dd><dt>Jurisdiction</dt><dd>${esc(jb.jurisdiction||jb.county||"")}</dd><dt>Owner</dt><dd>${esc(jb.owner_name||"")}</dd><dt>Contractor</dt><dd>${esc((ME&&ME.company)||jb.contractor||"")}</dd>
+    <dt>Inspection</dt><dd>${esc([h.code,h.name].filter(Boolean).join(" · "))}</dd><dt>Inspection date</dt><dd>${dt.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</dd><dt>Private provider</dt><dd>Aftermath Inspection Services LLC</dd></dl>
+    <div class="repres ${esc(h.result)}">${({pass:"PASSED",fail:"FAILED",partial:"PARTIAL",corr:"CORRECTIONS NEEDED"})[h.result]||esc(String(h.result).toUpperCase())}</div>
+    ${needsFixR(h.result)?`<h3>Corrections required before reinspection</h3>${corr.length?`<ol class="rcorr">${corr.map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:`<p class="repnote">See the inspector for details.</p>`}
+      ${ph.length?`<h3>Photos</h3><div class="rphs">${ph.map((p,i)=>`<figure><a target="_blank" rel="noopener" data-ph="${esc(p.path)}"><img alt="Photo ${i+1}" data-ph="${esc(p.path)}"></a><figcaption>PHOTO ${i+1}</figcaption></figure>`).join("")}</div>`:""}`:`<p class="repnote">Photos and field notes are kept on file and are not included on a passed inspection.</p>`}
+    <p class="repcert">${h.result==="pass"?"I hereby certify that the above-referenced inspection has been completed and is in conformance with the approved plans and the applicable codes.":needsFixR(h.result)?"This inspection is not approved. Correct the items above and request a reinspection.":""}</p>
+    <p class="repsig"><b>Luigi Vaccaro</b> · License BU2239 · BN7700<br>Building Code Administrator · Standard Inspector<br>Private Provider under s. 553.791, F.S.</p>`;
+  $("rv").hidden=false;document.body.style.overflow="hidden";$("rv").scrollTop=0;
+  $("rvbody").querySelectorAll("img[data-ph]").forEach(async im=>{try{const u=await sheetUrl(im.dataset.ph);im.src=u;im.parentElement.href=u}catch(e){im.alt="Photo unavailable"}})}
+$("rvclose").onclick=()=>{$("rv").hidden=true;document.body.style.overflow=""};
+$("rv").onclick=e=>{if(e.target===$("rv"))$("rvclose").onclick()};
 /* plan viewer: same as the inspector's: compare two sheets, tap a callout circle to open that sheet */
 function openPlans(jid){const jb=JOBS.find(x=>x.id===jid);const all=SHEETS.filter(x=>x.job_id===jid).sort((a,b)=>a.idx-b.idx);if(!all.length)return;
   const first=Math.max(0,all.findIndex(x=>x.path));
