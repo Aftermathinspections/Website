@@ -40,10 +40,21 @@
   .card{background:#fff;border:1px solid var(--line);padding:24px}
   .card h3{font-family:Archivo,Arial,sans-serif;font-size:15px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 10px;color:var(--maroon)}
   .card p{margin:0;color:#3A3C42;font-size:15.5px}
+  .card p.only{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-weight:600;color:var(--maroon)}
   .lic{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   .lic span{font-family:Archivo,Arial,sans-serif;font-weight:600;font-size:13px;letter-spacing:.06em;border:1px solid var(--line);padding:5px 10px;background:var(--paper)}
 
-  .contact{margin-top:44px;background:var(--black);color:#fff;padding:32px;display:flex;flex-wrap:wrap;gap:20px 40px;align-items:center;justify-content:space-between}
+  .appband{margin-top:44px;display:grid;grid-template-columns:2fr 1fr;gap:20px}
+  .appband > div{padding:28px}
+  .appmain{background:var(--maroon);color:#fff}
+  .soon{background:#fff;border:2px dashed var(--slate)}
+  .appband h3{font-family:Archivo,Arial,sans-serif;font-size:clamp(24px,3.4vw,30px);margin:6px 0 10px;line-height:1.15}
+  .appband p{margin:0;font-size:16px}
+  .appmain p{color:#F3E6E7}.soon p{color:#3A3C42}
+  .eyebrow{font-family:Archivo,Arial,sans-serif;font-weight:700;font-size:12px;letter-spacing:.16em}
+  .appmain .eyebrow{color:var(--rose)}.soon .eyebrow{color:var(--slate)}
+  @media (max-width:760px){.appband{grid-template-columns:1fr}}
+  .contact{margin-top:20px;background:var(--black);color:#fff;padding:32px;display:flex;flex-wrap:wrap;gap:20px 40px;align-items:center;justify-content:space-between}
   .contact h3{font-family:Archivo,Arial,sans-serif;font-size:24px;margin:0 0 4px}
   .contact p{margin:0;color:#B9BBC0;font-size:15px}
   .btn{display:inline-block;background:var(--maroon);color:#fff;text-decoration:none;font-weight:600;padding:15px 24px;font-size:16px;word-break:break-all}
@@ -84,6 +95,7 @@
     <div class="card">
       <h3>Plan review &amp; inspections</h3>
       <p>Private provider services under F.S. §553.791. Code-cited plan review comments and all required inspections through final.</p>
+      <p class="only">Same-day reinspections at no charge.<br>We work with licensed contractors only.</p>
     </div>
     <div class="card">
       <h3>Service area</h3>
@@ -96,10 +108,23 @@
     </div>
   </div>
 
+  <div class="appband">
+    <div class="appmain">
+      <div class="eyebrow">FOR OUR CLIENTS</div>
+      <h3>Your own AIS app</h3>
+      <p>Request, cancel or move inspections right from your phone. All your jobs in one place, and you get confirmation the moment you send it.</p>
+    </div>
+    <div class="soon">
+      <div class="eyebrow">COMING SOON</div>
+      <h3>Virtual inspections</h3>
+      <p>Live video inspections for eligible work, so your crew isn't waiting on a drive.</p>
+    </div>
+  </div>
+
   <div class="contact">
     <div>
       <h3>Request plan review or an inspection</h3>
-      <p>Or email <a href="mailto:requests@aftermathinspections.com" style="color:#fff">requests@aftermathinspections.com</a></p>
+      <p>Call or text <a href="tel:+13059007529" style="color:#fff">305-900-7529</a> · or email <a href="mailto:requests@aftermathinspections.com" style="color:#fff">requests@aftermathinspections.com</a></p>
     </div>
     <a class="btn" href="/request/">Request an inspection</a>
   </div>
