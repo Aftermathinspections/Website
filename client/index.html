@@ -79,17 +79,28 @@ textarea{min-height:84px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--black);color:#fff;padding:12px 20px;font-weight:600;z-index:30;max-width:90vw}
 .toast[hidden]{display:none}
 .plansbtn{display:block;width:calc(100% - 32px);margin:0 16px 12px;min-height:46px;border:1px solid var(--slate);background:#fff;color:var(--slate);font-family:var(--display);font-weight:700;font-size:14.5px;letter-spacing:.04em;cursor:pointer}
-.pv{position:fixed;inset:0;z-index:25;background:#111;display:flex;flex-direction:column}
+.pv{position:fixed;inset:0;z-index:25;background:#1b1b1b;display:flex;flex-direction:column;color:#ddd}
 .pv[hidden]{display:none}
-.pvbar,.pvfoot{display:flex;align-items:center;gap:8px;background:#000;color:#ddd;padding:8px max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left))}
-.pvbar{padding-top:max(8px,env(safe-area-inset-top))}
-.pvfoot{justify-content:center;padding-bottom:max(8px,env(safe-area-inset-bottom));font-size:13px}
-.pvbar select{flex:1;min-width:0;font-size:15px;padding:9px;background:#222;color:#fff;border:1px solid #444}
-.pv button{min-width:46px;min-height:44px;background:#222;color:#fff;border:1px solid #444;font-size:18px;font-weight:700;cursor:pointer}
-.pv a{color:#ddd;margin-left:10px}
-.pvimg{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#2a2a2a;touch-action:pan-x pan-y}
-.pvimg img{display:block;width:100%;max-width:none;background:#fff}
-.pvmsg{color:#ccc;padding:24px;text-align:center}
+.pvbar{display:flex;align-items:center;gap:8px;background:#000;padding:8px max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left));padding-top:max(8px,env(safe-area-inset-top))}
+.pvbar .t{flex:1;min-width:0;font-family:var(--display);font-weight:700;font-size:15px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv button{min-width:44px;min-height:44px;background:#222;color:#fff;border:1px solid #444;font-size:17px;font-weight:700;cursor:pointer}
+.pv button:disabled{opacity:.35}
+.pv .cmpt{font-size:14px;padding:0 12px}.pv .cmpt[aria-pressed="true"]{background:#6D282D;border-color:#6D282D}
+.pvbody{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;padding:6px max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left))}
+@media (orientation:landscape){.pvbody.two{flex-direction:row}}
+.pane2{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;border:3px solid transparent}
+.pvbody.two .pane2.act{border-color:#C0392B}
+.prow{display:flex;gap:6px;align-items:center;padding:4px 0}
+.prow select{flex:1;min-width:0;font-size:15px;padding:9px;background:#222;color:#fff;border:1px solid #444}
+.prow .lab{font-family:var(--display);font-weight:800;font-size:12px;letter-spacing:.1em;color:#E6A3A7}
+.vw{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;background:#2a2a2a;touch-action:pan-x pan-y}
+.pg{position:relative}.pg img{display:block;width:100%;max-width:none;background:#fff}
+.pv .hot{position:absolute;width:max(2.4%,30px);height:auto;aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid rgba(192,57,43,.85);background:rgba(192,57,43,.06);border-radius:50%;padding:0;min-width:0;min-height:0;cursor:pointer}
+.pv .hot:active{background:rgba(192,57,43,.35)}
+.tgt{position:absolute;width:max(3.2%,40px);aspect-ratio:1;transform:translate(-50%,-50%);border:4px solid #C0392B;border-radius:50%;pointer-events:none;animation:pm 1s ease-out 3}
+@keyframes pm{0%{box-shadow:0 0 0 0 rgba(192,57,43,.6)}100%{box-shadow:0 0 0 24px rgba(192,57,43,0)}}
+.pvmsg{color:#ccc;padding:40px 20px;text-align:center}
+.pvhint{font-size:12.5px;color:#aaa;padding:2px 2px 0}
 </style></head><body>
 
 <div class="login" id="login" hidden><form id="lf" autocomplete="on">
@@ -141,9 +152,8 @@ textarea{min-height:84px}
 </div></div>
 <div class="toast" id="toast" hidden></div>
 <div class="pv" id="pv" hidden role="dialog" aria-modal="true" aria-label="Plans">
-  <div class="pvbar"><button id="pvclose" aria-label="Close plans">×</button><select id="pvsel" aria-label="Plan sheet"></select><button id="pvprev" aria-label="Previous sheet">‹</button><button id="pvnext" aria-label="Next sheet">›</button></div>
-  <div class="pvimg" id="pvimg"><img id="pvpic" alt=""><div class="pvmsg" id="pvmsg" hidden></div></div>
-  <div class="pvfoot"><button id="pvout" aria-label="Zoom out">−</button><button id="pvfit" style="font-size:14px">Fit</button><button id="pvin" aria-label="Zoom in">+</button><a id="pvfull" target="_blank" rel="noopener">Open full size</a></div>
+  <div class="pvbar"><button id="pvclose" aria-label="Close plans">×</button><div class="t" id="pvtitle">Plans</div><button class="cmpt" id="pvcmp" aria-pressed="false">Compare</button></div>
+  <div class="pvbody" id="pvbody"></div>
 </div>
 
 <script>
@@ -163,7 +173,7 @@ const RL={pass:"Pass",fail:"Fail",partial:"Partial",corr:"Corrections",cancelled
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const nice=s=>s?new Date(String(s).slice(0,10)+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):"";
 function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,3000)}
-let sb=null, ME=null, JOBS=[], INSP=[], REQS=[], PH=[], F={}, SHEETS=[], PV={list:[],i:0,z:1}, URLS={};
+let sb=null, ME=null, JOBS=[], INSP=[], REQS=[], PH=[], F={}, SHEETS=[], PV={list:[],P:[{s:0,z:1},{s:1,z:1}],cmp:false,act:0}, URLS={};
 
 function shrink(file,max=2000){return new Promise(res=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),"image/jpeg",.82)};im.onerror=()=>res(file);im.src=u})}
 
@@ -173,7 +183,7 @@ async function load(){
   ME=c.data[0];
   $("who").innerHTML=`${esc((ME.company||"CLIENT").toUpperCase())}<span>Client ID ${esc(ME.client_no||"")}</span>`;
   const [j,i,r,ps]=await Promise.all([sb.from("jobs").select("*").order("created_at"),sb.from("inspections").select("*"),sb.from("requests").select("*").eq("status","new").order("created_at"),sb.from("plan_sheets").select("id,job_id,idx,num,title,path").order("idx")]);
-  JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];SHEETS=((ps&&ps.data)||[]).filter(x=>x.path);render();
+  JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];SHEETS=(ps&&ps.data)||[];render();
 }
 const isPlaceholder=x=>!x.code&&!x.scheduled_date&&!x.result;
 function render(){
@@ -188,7 +198,7 @@ function render(){
       ${nx?`<div class="next">Next: <b>${esc([nx.code,nx.name].filter(Boolean).join(" "))}</b><br>${esc(nx.time_window||nice(nx.scheduled_date))}</div>`:`<div class="next none">Nothing scheduled right now.</div>`}
       ${pend.map(p=>`<div class="pend">Sent ${new Date(p.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}: ${esc(p.inspection.replace(/^(CANCEL|RESCHEDULE):\s*/,m=>m.startsWith("C")?"Cancel ":"Move "))}${p.requested_date?" for "+nice(p.requested_date):""}. Waiting for AIS to confirm.</div>`).join("")}
       <div class="acts"><button class="req" data-a="req" data-j="${jb.id}">Request</button><button data-a="rs" data-j="${jb.id}" ${open.length?"":"disabled style='opacity:.4'"}>Move</button><button class="cx" data-a="cx" data-j="${jb.id}" ${open.length?"":"disabled style='opacity:.4'"}>Cancel</button></div>
-      ${(()=>{const n=SHEETS.filter(x=>x.job_id===jb.id).length;return n?`<button class="plansbtn" data-plans="${jb.id}">View plans (${n} sheet${n>1?"s":""})</button>`:""})()}
+      ${(()=>{const n=SHEETS.filter(x=>x.job_id===jb.id&&x.path).length;return n?`<button class="plansbtn" data-plans="${jb.id}">View plans (${n} sheet${n>1?"s":""})</button>`:""})()}
       ${done.length?`<details><summary>Inspection history (${done.length})</summary>${done.map(h=>`<div class="hrow"><span class="d">${esc(nice(h.done_at||h.scheduled_date))}</span><span>${esc([h.code,h.name].filter(Boolean).join(" "))}</span><span class="r ${h.result}">${RL[h.result]||esc(h.result)}</span></div>${(h.result==="fail"||h.result==="partial"||h.result==="corr")&&h.corrections?`<ol class="corrs">${h.corrections.split("\n").filter(x=>x.trim()).map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:""}`).join("")}</details>`:""}
     </div>`}).join("");
   document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>openForm(b.dataset.a,JOBS.find(j=>j.id===b.dataset.j)));
@@ -228,34 +238,50 @@ function drawPh(){$("fphs").innerHTML=PH.map((p,i)=>`<figure><img src="${p.url}"
 $("fph").onchange=async e=>{for(const f of [...e.target.files]){if(PH.length>=10)break;const blob=await shrink(f);PH.push({blob,url:URL.createObjectURL(blob)})}e.target.value="";drawPh()};
 $("fclose").onclick=()=>$("sheet").hidden=true;
 $("newjob").onclick=()=>openForm("req",null);
-/* plan viewer */
-function openPlans(jid){PV.list=SHEETS.filter(x=>x.job_id===jid).sort((a,b)=>a.idx-b.idx);if(!PV.list.length)return;
-  $("pvsel").innerHTML=PV.list.map((x,i)=>`<option value="${i}">${esc([x.num,x.title].filter(Boolean).join(" · "))}</option>`).join("");
-  $("pv").hidden=false;document.body.style.overflow="hidden";showSheet(0)}
+/* plan viewer: same as the inspector's: compare two sheets, tap a callout circle to open that sheet */
+function openPlans(jid){const jb=JOBS.find(x=>x.id===jid);const all=SHEETS.filter(x=>x.job_id===jid).sort((a,b)=>a.idx-b.idx);if(!all.length)return;
+  const first=Math.max(0,all.findIndex(x=>x.path));
+  Object.assign(PV,{jid,list:all,links:(jb&&jb.plan_links)||{},dets:(jb&&jb.plan_dets)||{},P:[{s:first,z:1},{s:Math.min(all.length-1,first+1),z:1}],cmp:false,act:0,pend:null});
+  $("pvtitle").textContent=(jb?jb.address+" · ":"")+"Plans";$("pv").hidden=false;document.body.style.overflow="hidden";renderPV()}
 function closePlans(){$("pv").hidden=true;document.body.style.overflow=""}
 async function sheetUrl(path,fresh){if(!fresh&&URLS[path])return URLS[path];const{data,error}=await sb.storage.from("files").createSignedUrl(path,3600);if(error||!data)throw error||new Error("no url");return URLS[path]=data.signedUrl}
-async function showSheet(i,fresh){PV.i=Math.max(0,Math.min(PV.list.length-1,i));$("pvsel").value=String(PV.i);const x=PV.list[PV.i];
-  $("pvprev").disabled=PV.i===0;$("pvnext").disabled=PV.i===PV.list.length-1;setZ(1);$("pvimg").scrollTo(0,0);
-  const pic=$("pvpic");pic.hidden=true;$("pvmsg").hidden=false;$("pvmsg").textContent="Loading sheet…";pic.alt=[x.num,x.title].filter(Boolean).join(" ");
-  try{const u=await sheetUrl(x.path,fresh);if(PV.list[PV.i]!==x)return;pic.onload=()=>{pic.hidden=false;$("pvmsg").hidden=true};
-    pic.onerror=()=>{if(!fresh)showSheet(PV.i,true);else $("pvmsg").textContent="Couldn't open this sheet. Check your signal and try again."};
-    pic.src=u;$("pvfull").href=u}
-  catch(e){$("pvmsg").textContent="Couldn't open this sheet. Check your signal and try again."}}
-function setZ(z,cx,cy){const box=$("pvimg"),old=PV.z;z=Math.max(1,Math.min(6,z));
-  if(cx==null){cx=box.clientWidth/2;cy=box.clientHeight/2}const sx=(box.scrollLeft+cx)/old,sy=(box.scrollTop+cy)/old;
-  PV.z=z;$("pvpic").style.width=(z*100)+"%";box.scrollLeft=sx*z-cx;box.scrollTop=sy*z-cy}
-$("pvclose").onclick=closePlans;$("pvsel").onchange=()=>showSheet(+$("pvsel").value);
-$("pvprev").onclick=()=>showSheet(PV.i-1);$("pvnext").onclick=()=>showSheet(PV.i+1);
-$("pvin").onclick=()=>setZ(PV.z*1.5);$("pvout").onclick=()=>setZ(PV.z/1.5);$("pvfit").onclick=()=>{setZ(1);$("pvimg").scrollTo(0,0)};
-(()=>{const box=$("pvimg");let t0=null,sw=null;const d=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-  box.addEventListener("touchstart",e=>{if(e.touches.length===2){const r=box.getBoundingClientRect();t0={d:d(e.touches[0],e.touches[1]),z:PV.z,cx:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,cy:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top};sw=null;e.preventDefault()}
-    else if(e.touches.length===1&&PV.z===1)sw={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:false});
-  box.addEventListener("touchmove",e=>{if(t0&&e.touches.length===2){e.preventDefault();setZ(t0.z*d(e.touches[0],e.touches[1])/t0.d,t0.cx,t0.cy)}},{passive:false});
-  box.addEventListener("touchend",e=>{if(t0&&e.touches.length<2)t0=null;if(sw&&e.changedTouches.length){const dx=e.changedTouches[0].clientX-sw.x,dy=e.changedTouches[0].clientY-sw.y;
-    if(Math.abs(dx)>70&&Math.abs(dx)>2*Math.abs(dy))showSheet(PV.i+(dx<0?1:-1));sw=null}});
-  box.addEventListener("wheel",e=>{if(e.ctrlKey){e.preventDefault();const r=box.getBoundingClientRect();setZ(PV.z*Math.exp(-e.deltaY/100),e.clientX-r.left,e.clientY-r.top)}},{passive:false});
-  document.addEventListener("keydown",e=>{if($("pv").hidden)return;if(e.key==="Escape")closePlans();if(e.key==="ArrowRight")showSheet(PV.i+1);if(e.key==="ArrowLeft")showSheet(PV.i-1)});
-})();
+function sheetName(x){return [x.num,x.title].filter(Boolean).join(" · ")}
+function renderPV(){const L=PV.list,ks=PV.cmp?[0,1]:[0];$("pvcmp").setAttribute("aria-pressed",PV.cmp);$("pvcmp").textContent=PV.cmp?"Close compare":"Compare";
+  const b=$("pvbody");b.className="pvbody"+(PV.cmp?" two":"");
+  b.innerHTML=ks.map(k=>{const V=PV.P[k],x=L[V.s],u=x.path&&URLS[x.path];const hot=((PV.links[V.s]||PV.links[String(V.s)])||[]).filter(l=>L[l[2]]);
+    return `<div class="pane2${PV.cmp&&PV.act===k?" act":""}" data-k="${k}">
+    <div class="prow">${PV.cmp?`<span class="lab">${k?"2":"1"}</span>`:""}<select data-sel="${k}" aria-label="Sheet">${L.map((y,i)=>`<option value="${i}"${i===V.s?" selected":""}${y.path?"":" disabled"}>${esc(sheetName(y))}${y.path?"":" (not loaded)"}</option>`).join("")}</select>
+      <button data-step="${k}|-1" aria-label="Previous sheet">‹</button><button data-step="${k}|1" aria-label="Next sheet">›</button><button data-z="${k}|-1" aria-label="Zoom out">−</button><button data-z="${k}|1" aria-label="Zoom in">+</button></div>
+    <div class="vw" data-vw="${k}">${u?`<div class="pg" style="width:${100*V.z}%"><img src="${u}" alt="${esc(sheetName(x))}">${hot.map(l=>`<button class="hot" style="left:${l[0]*100}%;top:${l[1]*100}%" data-to="${l[2]}" data-det="${l[3]??""}" aria-label="Go to ${l[3]?"detail "+l[3]+" on ":""}${esc(L[l[2]].num||"sheet")}"></button>`).join("")}</div>`:`<div class="pvmsg">${x.path?"Loading sheet…":"This sheet isn't loaded yet."}</div>`}</div></div>`}).join("")+
+    (PV.cmp?"":`<div class="pvhint">Pinch to zoom · swipe for the next sheet · tap a red circle to open that detail · Compare shows two sheets</div>`);
+  ks.forEach(k=>{const x=L[PV.P[k].s];if(x.path&&!URLS[x.path])sheetUrl(x.path).then(()=>renderPV()).catch(()=>{const m=b.querySelector(`[data-vw="${k}"] .pvmsg`);if(m)m.textContent="Couldn't open this sheet. Check your signal."})});
+  b.querySelectorAll("[data-sel]").forEach(el=>el.onchange=()=>{const k=+el.dataset.sel;PV.P[k]={s:+el.value,z:1};PV.act=k;renderPV()});
+  b.querySelectorAll("[data-step]").forEach(el=>el.onclick=()=>{const[k,d]=el.dataset.step.split("|").map(Number);goPV(k,PV.P[k].s+d)});
+  b.querySelectorAll("[data-z]").forEach(el=>el.onclick=()=>{const[k,d]=el.dataset.z.split("|").map(Number);zoomPV(k,PV.P[k].z*(d>0?1.5:1/1.5))});
+  b.querySelectorAll(".pane2").forEach(p=>p.addEventListener("pointerdown",()=>{const k=+p.dataset.k;if(PV.cmp&&PV.act!==k){PV.act=k;b.querySelectorAll(".pane2").forEach(q=>q.classList.toggle("act",+q.dataset.k===k))}}));
+  b.querySelectorAll(".hot").forEach(h=>h.onclick=e=>{e.stopPropagation();const k=+h.closest("[data-vw]").dataset.vw,to=+h.dataset.to,dn=h.dataset.det;
+    const other=PV.cmp?1-k:1;PV.cmp=true;const d=dn&&PV.dets[to]&&PV.dets[to][dn];PV.P[other]={s:to,z:d?2.5:1};PV.act=other;PV.pend=d?{k:other,fx:d[0],fy:d[1]}:null;renderPV();
+    toast(`${dn?"Detail "+dn+" on ":""}${L[to].num||"that sheet"} opened in view ${other+1}`)});
+  b.querySelectorAll("[data-vw]").forEach(vw=>bindVW(vw,+vw.dataset.vw));
+  if(PV.pend){const p0=PV.pend,v=b.querySelector(`[data-vw="${p0.k}"]`),im=v&&v.querySelector("img");if(im){PV.pend=null;const pg=v.querySelector(".pg");
+    const mk=document.createElement("div");mk.className="tgt";mk.style.left=p0.fx*100+"%";mk.style.top=p0.fy*100+"%";pg.appendChild(mk);setTimeout(()=>mk.remove(),6000);
+    const place=()=>{if(!im.clientWidth)return;v.scrollLeft=p0.fx*im.clientWidth-v.clientWidth*0.5;v.scrollTop=p0.fy*im.clientHeight-v.clientHeight*0.5};
+    const go=()=>{place();requestAnimationFrame(()=>requestAnimationFrame(place));setTimeout(place,300)};im.complete&&im.naturalWidth?go():im.addEventListener("load",go,{once:true})}}}
+function goPV(k,n){const L=PV.list;let s=n;const dir=n>PV.P[k].s?1:-1;while(L[s]&&!L[s].path)s+=dir;if(s<0||s>=L.length)return toast(dir<0?"First sheet":"Last sheet");PV.P[k]={s,z:1};PV.act=k;renderPV()}
+function zoomPV(k,z,cx,cy){const vw=$("pvbody").querySelector(`[data-vw="${k}"]`),pg=vw&&vw.querySelector(".pg");if(!pg)return;const V=PV.P[k],old=V.z;z=Math.max(1,Math.min(6,z));
+  if(cx==null){cx=vw.clientWidth/2;cy=vw.clientHeight/2}const sx=(vw.scrollLeft+cx)/old,sy=(vw.scrollTop+cy)/old;V.z=z;pg.style.width=(100*z)+"%";vw.scrollLeft=sx*z-cx;vw.scrollTop=sy*z-cy}
+function bindVW(vw,k){let t0=null,sw=null;const d=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  vw.addEventListener("touchstart",e=>{if(e.touches.length===2){const r=vw.getBoundingClientRect();t0={d:d(e.touches[0],e.touches[1]),z:PV.P[k].z,cx:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,cy:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top};sw=null;e.preventDefault()}
+    else if(e.touches.length===1&&PV.P[k].z<=1.01)sw={x:e.touches[0].clientX,y:e.touches[0].clientY};else sw=null},{passive:false});
+  vw.addEventListener("touchmove",e=>{if(t0&&e.touches.length===2){e.preventDefault();zoomPV(k,t0.z*d(e.touches[0],e.touches[1])/t0.d,t0.cx,t0.cy)}},{passive:false});
+  vw.addEventListener("touchend",e=>{if(e.touches.length<2)t0=null;if(sw&&e.changedTouches.length){const t=e.changedTouches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
+    if(Math.max(Math.abs(dx),Math.abs(dy))>60)goPV(k,PV.P[k].s+((Math.abs(dx)>Math.abs(dy)?dx:dy)<0?1:-1))}sw=null});
+  ["gesturestart","gesturechange","gestureend"].forEach(ev=>vw.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+  vw.addEventListener("wheel",e=>{if(e.ctrlKey){e.preventDefault();const r=vw.getBoundingClientRect();zoomPV(k,PV.P[k].z*Math.exp(-e.deltaY/100),e.clientX-r.left,e.clientY-r.top)}},{passive:false});
+  vw.addEventListener("dblclick",e=>{const r=vw.getBoundingClientRect();zoomPV(k,PV.P[k].z>1.5?1:3,e.clientX-r.left,e.clientY-r.top)})}
+$("pvclose").onclick=closePlans;
+$("pvcmp").onclick=()=>{PV.cmp=!PV.cmp;PV.act=PV.cmp?1:0;if(PV.cmp&&PV.P[1].s===PV.P[0].s)goPV(1,Math.min(PV.list.length-1,PV.P[0].s+1));else renderPV()};
+document.addEventListener("keydown",e=>{if($("pv").hidden)return;if(e.key==="Escape")closePlans();if(e.key==="ArrowRight"||e.key==="ArrowDown")goPV(PV.act,PV.P[PV.act].s+1);if(e.key==="ArrowLeft"||e.key==="ArrowUp")goPV(PV.act,PV.P[PV.act].s-1)});
 
 $("ff").onsubmit=async e=>{e.preventDefault();$("ferr").textContent="";
   const {mode,job}=F;
