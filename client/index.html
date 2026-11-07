@@ -78,6 +78,18 @@ textarea{min-height:84px}
 .sendbox{background:#fff;border:1px solid var(--line);padding:12px 14px;margin-top:16px}.sendbox b{font-family:var(--display)}.sendbox label:not(.check){margin-top:8px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--black);color:#fff;padding:12px 20px;font-weight:600;z-index:30;max-width:90vw}
 .toast[hidden]{display:none}
+.plansbtn{display:block;width:calc(100% - 32px);margin:0 16px 12px;min-height:46px;border:1px solid var(--slate);background:#fff;color:var(--slate);font-family:var(--display);font-weight:700;font-size:14.5px;letter-spacing:.04em;cursor:pointer}
+.pv{position:fixed;inset:0;z-index:25;background:#111;display:flex;flex-direction:column}
+.pv[hidden]{display:none}
+.pvbar,.pvfoot{display:flex;align-items:center;gap:8px;background:#000;color:#ddd;padding:8px max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left))}
+.pvbar{padding-top:max(8px,env(safe-area-inset-top))}
+.pvfoot{justify-content:center;padding-bottom:max(8px,env(safe-area-inset-bottom));font-size:13px}
+.pvbar select{flex:1;min-width:0;font-size:15px;padding:9px;background:#222;color:#fff;border:1px solid #444}
+.pv button{min-width:46px;min-height:44px;background:#222;color:#fff;border:1px solid #444;font-size:18px;font-weight:700;cursor:pointer}
+.pv a{color:#ddd;margin-left:10px}
+.pvimg{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#2a2a2a;touch-action:pan-x pan-y}
+.pvimg img{display:block;width:100%;max-width:none;background:#fff}
+.pvmsg{color:#ccc;padding:24px;text-align:center}
 </style></head><body>
 
 <div class="login" id="login" hidden><form id="lf" autocomplete="on">
@@ -128,6 +140,11 @@ textarea{min-height:84px}
   </form>
 </div></div>
 <div class="toast" id="toast" hidden></div>
+<div class="pv" id="pv" hidden role="dialog" aria-modal="true" aria-label="Plans">
+  <div class="pvbar"><button id="pvclose" aria-label="Close plans">×</button><select id="pvsel" aria-label="Plan sheet"></select><button id="pvprev" aria-label="Previous sheet">‹</button><button id="pvnext" aria-label="Next sheet">›</button></div>
+  <div class="pvimg" id="pvimg"><img id="pvpic" alt=""><div class="pvmsg" id="pvmsg" hidden></div></div>
+  <div class="pvfoot"><button id="pvout" aria-label="Zoom out">−</button><button id="pvfit" style="font-size:14px">Fit</button><button id="pvin" aria-label="Zoom in">+</button><a id="pvfull" target="_blank" rel="noopener">Open full size</a></div>
+</div>
 
 <script>
 const AREAS={
@@ -146,7 +163,7 @@ const RL={pass:"Pass",fail:"Fail",partial:"Partial",corr:"Corrections",cancelled
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const nice=s=>s?new Date(String(s).slice(0,10)+"T12:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}):"";
 function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,3000)}
-let sb=null, ME=null, JOBS=[], INSP=[], REQS=[], PH=[], F={};
+let sb=null, ME=null, JOBS=[], INSP=[], REQS=[], PH=[], F={}, SHEETS=[], PV={list:[],i:0,z:1}, URLS={};
 
 function shrink(file,max=2000){return new Promise(res=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),"image/jpeg",.82)};im.onerror=()=>res(file);im.src=u})}
 
@@ -155,8 +172,8 @@ async function load(){
   if(c.error||!c.data.length){$("jobs").innerHTML=`<p class="empty">Your account isn't linked to any jobs yet. Please contact Aftermath Inspection Services.</p>`;return}
   ME=c.data[0];
   $("who").innerHTML=`${esc((ME.company||"CLIENT").toUpperCase())}<span>Client ID ${esc(ME.client_no||"")}</span>`;
-  const [j,i,r]=await Promise.all([sb.from("jobs").select("*").order("created_at"),sb.from("inspections").select("*"),sb.from("requests").select("*").eq("status","new").order("created_at")]);
-  JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];render();
+  const [j,i,r,ps]=await Promise.all([sb.from("jobs").select("*").order("created_at"),sb.from("inspections").select("*"),sb.from("requests").select("*").eq("status","new").order("created_at"),sb.from("plan_sheets").select("id,job_id,idx,num,title,path").order("idx")]);
+  JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];SHEETS=((ps&&ps.data)||[]).filter(x=>x.path);render();
 }
 const isPlaceholder=x=>!x.code&&!x.scheduled_date&&!x.result;
 function render(){
@@ -171,9 +188,11 @@ function render(){
       ${nx?`<div class="next">Next: <b>${esc([nx.code,nx.name].filter(Boolean).join(" "))}</b><br>${esc(nx.time_window||nice(nx.scheduled_date))}</div>`:`<div class="next none">Nothing scheduled right now.</div>`}
       ${pend.map(p=>`<div class="pend">Sent ${new Date(p.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}: ${esc(p.inspection.replace(/^(CANCEL|RESCHEDULE):\s*/,m=>m.startsWith("C")?"Cancel ":"Move "))}${p.requested_date?" for "+nice(p.requested_date):""}. Waiting for AIS to confirm.</div>`).join("")}
       <div class="acts"><button class="req" data-a="req" data-j="${jb.id}">Request</button><button data-a="rs" data-j="${jb.id}" ${open.length?"":"disabled style='opacity:.4'"}>Move</button><button class="cx" data-a="cx" data-j="${jb.id}" ${open.length?"":"disabled style='opacity:.4'"}>Cancel</button></div>
+      ${(()=>{const n=SHEETS.filter(x=>x.job_id===jb.id).length;return n?`<button class="plansbtn" data-plans="${jb.id}">View plans (${n} sheet${n>1?"s":""})</button>`:""})()}
       ${done.length?`<details><summary>Inspection history (${done.length})</summary>${done.map(h=>`<div class="hrow"><span class="d">${esc(nice(h.done_at||h.scheduled_date))}</span><span>${esc([h.code,h.name].filter(Boolean).join(" "))}</span><span class="r ${h.result}">${RL[h.result]||esc(h.result)}</span></div>${(h.result==="fail"||h.result==="partial"||h.result==="corr")&&h.corrections?`<ol class="corrs">${h.corrections.split("\n").filter(x=>x.trim()).map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:""}`).join("")}</details>`:""}
     </div>`}).join("");
   document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>openForm(b.dataset.a,JOBS.find(j=>j.id===b.dataset.j)));
+  document.querySelectorAll("[data-plans]").forEach(b=>b.onclick=()=>openPlans(b.dataset.plans));
 }
 function codesFor(county){return CODES[county]||[]}
 function fillInsp(county,preset,limitTo){
@@ -209,6 +228,34 @@ function drawPh(){$("fphs").innerHTML=PH.map((p,i)=>`<figure><img src="${p.url}"
 $("fph").onchange=async e=>{for(const f of [...e.target.files]){if(PH.length>=10)break;const blob=await shrink(f);PH.push({blob,url:URL.createObjectURL(blob)})}e.target.value="";drawPh()};
 $("fclose").onclick=()=>$("sheet").hidden=true;
 $("newjob").onclick=()=>openForm("req",null);
+/* plan viewer */
+function openPlans(jid){PV.list=SHEETS.filter(x=>x.job_id===jid).sort((a,b)=>a.idx-b.idx);if(!PV.list.length)return;
+  $("pvsel").innerHTML=PV.list.map((x,i)=>`<option value="${i}">${esc([x.num,x.title].filter(Boolean).join(" · "))}</option>`).join("");
+  $("pv").hidden=false;document.body.style.overflow="hidden";showSheet(0)}
+function closePlans(){$("pv").hidden=true;document.body.style.overflow=""}
+async function sheetUrl(path,fresh){if(!fresh&&URLS[path])return URLS[path];const{data,error}=await sb.storage.from("files").createSignedUrl(path,3600);if(error||!data)throw error||new Error("no url");return URLS[path]=data.signedUrl}
+async function showSheet(i,fresh){PV.i=Math.max(0,Math.min(PV.list.length-1,i));$("pvsel").value=String(PV.i);const x=PV.list[PV.i];
+  $("pvprev").disabled=PV.i===0;$("pvnext").disabled=PV.i===PV.list.length-1;setZ(1);$("pvimg").scrollTo(0,0);
+  const pic=$("pvpic");pic.hidden=true;$("pvmsg").hidden=false;$("pvmsg").textContent="Loading sheet…";pic.alt=[x.num,x.title].filter(Boolean).join(" ");
+  try{const u=await sheetUrl(x.path,fresh);if(PV.list[PV.i]!==x)return;pic.onload=()=>{pic.hidden=false;$("pvmsg").hidden=true};
+    pic.onerror=()=>{if(!fresh)showSheet(PV.i,true);else $("pvmsg").textContent="Couldn't open this sheet. Check your signal and try again."};
+    pic.src=u;$("pvfull").href=u}
+  catch(e){$("pvmsg").textContent="Couldn't open this sheet. Check your signal and try again."}}
+function setZ(z,cx,cy){const box=$("pvimg"),old=PV.z;z=Math.max(1,Math.min(6,z));
+  if(cx==null){cx=box.clientWidth/2;cy=box.clientHeight/2}const sx=(box.scrollLeft+cx)/old,sy=(box.scrollTop+cy)/old;
+  PV.z=z;$("pvpic").style.width=(z*100)+"%";box.scrollLeft=sx*z-cx;box.scrollTop=sy*z-cy}
+$("pvclose").onclick=closePlans;$("pvsel").onchange=()=>showSheet(+$("pvsel").value);
+$("pvprev").onclick=()=>showSheet(PV.i-1);$("pvnext").onclick=()=>showSheet(PV.i+1);
+$("pvin").onclick=()=>setZ(PV.z*1.5);$("pvout").onclick=()=>setZ(PV.z/1.5);$("pvfit").onclick=()=>{setZ(1);$("pvimg").scrollTo(0,0)};
+(()=>{const box=$("pvimg");let t0=null,sw=null;const d=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  box.addEventListener("touchstart",e=>{if(e.touches.length===2){const r=box.getBoundingClientRect();t0={d:d(e.touches[0],e.touches[1]),z:PV.z,cx:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,cy:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top};sw=null;e.preventDefault()}
+    else if(e.touches.length===1&&PV.z===1)sw={x:e.touches[0].clientX,y:e.touches[0].clientY}},{passive:false});
+  box.addEventListener("touchmove",e=>{if(t0&&e.touches.length===2){e.preventDefault();setZ(t0.z*d(e.touches[0],e.touches[1])/t0.d,t0.cx,t0.cy)}},{passive:false});
+  box.addEventListener("touchend",e=>{if(t0&&e.touches.length<2)t0=null;if(sw&&e.changedTouches.length){const dx=e.changedTouches[0].clientX-sw.x,dy=e.changedTouches[0].clientY-sw.y;
+    if(Math.abs(dx)>70&&Math.abs(dx)>2*Math.abs(dy))showSheet(PV.i+(dx<0?1:-1));sw=null}});
+  box.addEventListener("wheel",e=>{if(e.ctrlKey){e.preventDefault();const r=box.getBoundingClientRect();setZ(PV.z*Math.exp(-e.deltaY/100),e.clientX-r.left,e.clientY-r.top)}},{passive:false});
+  document.addEventListener("keydown",e=>{if($("pv").hidden)return;if(e.key==="Escape")closePlans();if(e.key==="ArrowRight")showSheet(PV.i+1);if(e.key==="ArrowLeft")showSheet(PV.i-1)});
+})();
 
 $("ff").onsubmit=async e=>{e.preventDefault();$("ferr").textContent="";
   const {mode,job}=F;
