@@ -155,6 +155,7 @@ textarea{width:100%;min-height:180px;font:inherit;font-size:16px;padding:12px;bo
 .repres.fail{background:var(--fail)}.repres.partial{background:var(--part)}.repres.corr{background:var(--slate)}.repres:not(.pass):not(.fail):not(.partial):not(.corr){background:#999}
 .corr{margin:0;padding-left:22px;line-height:1.5}.corr li{margin-bottom:6px}
 .repnote{font-size:14px;color:var(--mute)}
+.repcert{margin:16px 0 0;font-size:14.5px;line-height:1.45}.repcert:empty{display:none}
 .repsig{margin-top:16px;font-size:13px;color:var(--mute);border-top:1px solid var(--line);padding-top:10px}
 .reopen{background:none;border:0;color:var(--maroon);font-weight:600;cursor:pointer;padding:8px 0;min-height:44px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--black);color:#fff;padding:12px 20px;font-weight:600;z-index:20}
@@ -345,12 +346,13 @@ function render(){
   if(tab==="notes")pane=`<label for="notes" class="hint" style="display:block;margin:0 0 6px">Field notes for the report</label><textarea id="notes" placeholder="Example: Pile P7 dowels short of plan length. Contractor to verify with EOR before pour.">${esc(s.notes)}</textarea>
     <p class="hint">Saved automatically. Plaud recordings will drop in here in a later version.</p>`;
   const corrList=s.corr.split("\n").map(x=>x.trim()).filter(Boolean);
-  const report=()=>`<div class="rep"><div class="rephead"><span class="mark">AIS</span><div><b>AFTERMATH INSPECTION SERVICES LLC</b><br>Inspection Result</div><span class="repdate">${new Date(s.doneAt||Date.now()).toLocaleDateString("en-US")}</span></div>
-     <dl class="kv"><dt>Address</dt><dd>${esc(j.addr)}, ${esc(j.key)}, FL</dd><dt>Permit</dt><dd style="font-family:var(--mono)">${j.permit}</dd><dt>Inspection</dt><dd>${j.code?j.code+" · ":""}${esc(j.name)}</dd><dt>Contractor</dt><dd>${esc(j.contractor)}</dd></dl>
+  const report=()=>`<div class="rep"><div class="rephead"><span class="mark">AIS</span><div><b>AFTERMATH INSPECTION SERVICES LLC</b><br>Private Provider Inspection Report</div><span class="repdate">${j.repNo?"Report #"+j.repNo+"<br>":""}${new Date(s.doneAt||Date.now()).toLocaleDateString("en-US")}</span></div>
+     <dl class="kv"><dt>Permit</dt><dd style="font-family:var(--mono)">${esc(j.permit)}</dd><dt>Site address</dt><dd>${esc(j.addr)}, ${esc(j.key)}, FL</dd><dt>Jurisdiction</dt><dd>${esc(j.jur||j.county||"")}</dd><dt>Owner</dt><dd>${esc(j.owner||"")}</dd><dt>Contractor</dt><dd>${esc(j.contractor)}</dd><dt>Inspection</dt><dd>${j.code?j.code+" · ":""}${esc(j.name)}</dd><dt>Inspection date</dt><dd>${new Date(s.doneAt||Date.now()).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</dd><dt>Private provider</dt><dd>Aftermath Inspection Services LLC</dd></dl>
      <div class="repres ${s.result}">${s.result?RL[s.result].toUpperCase():"NO RESULT SELECTED"}</div>
      ${needsFix(s.result)?`<h3>Corrections required before reinspection</h3>${corrList.length?`<ol class="corr">${corrList.map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:`<p class="empty">No corrections written yet.</p>`}
        ${s.photos.length?`<h3>Photos</h3><div class="thumbs">${s.photos.map((p,i)=>`<figure><img src="${p}" alt="Photo ${i+1}"><figcaption>PHOTO ${i+1}</figcaption></figure>`).join("")}</div>`:""}`:`<p class="repnote">Photos and field notes are kept on file and are not included on a passed inspection.</p>`}
-     <p class="repsig">Luigi Vaccaro · Building Code Administrator BU2239<br>Private Provider under s. 553.791, F.S.</p></div>`;
+     <p class="repcert">${s.result==="pass"?"I hereby certify that the above-referenced inspection has been completed and is in conformance with the approved plans and the applicable codes.":needsFix(s.result)?"This inspection is not approved. Correct the items above and request a reinspection.":""}</p>
+     <p class="repsig"><b>Luigi Vaccaro</b> · License BU2239 · BN7700<br>Building Code Administrator · Standard Inspector<br>Private Provider under s. 553.791, F.S.</p></div>`;
   const res=s.done?`<div class="donebar"><div class="big">✓ COMPLETED ${tm(s.doneAt)}</div><div>${RL[s.result]} · ${s.deliver==="send"?`Sent to customer ${tm(s.doneAt)}`:"On file, not sent to customer"}${s.photos.length?` · ${s.photos.length} photos`:""}</div></div>
       <div class="rowbtns"><button class="ghostbtn" id="pv">${s.preview?"Hide report":"View report"}</button>${s.deliver!=="send"?`<button class="ghostbtn" id="sendnow">Send to customer now</button>`:""}<button class="reopen" id="reopen">Reopen</button></div>${s.preview?report():""}`
    :`<div class="rbtns">${[["pass","PASS"],["fail","FAIL"],["partial","PARTIAL"],["corr","CORRECTIONS NEEDED"]].map(r=>`<button class="rb ${r[0]}" data-r="${r[0]}" aria-pressed="${s.result===r[0]}">${r[1]}</button>`).join("")}</div>
@@ -588,7 +590,7 @@ function build(){const now=Date.now(),jobs=RAW.jobs||[],ins=RAW.insp||[],shs=RAW
       const hist=mine.filter(h=>h.id!==i.id&&h.result&&!(h.done_at&&sameDay(h.done_at,now))).map(h=>[dstr(h.done_at||h.scheduled_date),[h.code,h.name].filter(Boolean).join(" ")||"Inspection",RS[h.result]||h.result]);
       JOBS.push({id:i.id,jobId:jb.id,addr:jb.address,key:jb.area||"",mm:+jb.mm||0,side,county:jb.county||"",permit:jb.permit||"",jur:jb.jurisdiction||"",code:i.code||"",name:i.name||"Inspection",
         contractor:jb.contractor||"",cphone:jb.contractor_phone||"",owner:jb.owner_name||"",win:i.time_window||jb.time_window||"Anytime",urgent:!!i.urgent,gate:jb.gate_code||"",cnote:jb.notes||"",
-        scope:jb.scope||"",hist,resTo:[i.result_email,i.result_phone].filter(Boolean).join(" · "),rev:jb.plan_rev||"",links:jb.plan_links||{},dets:jb.plan_dets||{},sheets:sheets.map(x=>x)});
+        scope:jb.scope||"",repNo:i.report_no||null,hist,resTo:[i.result_email,i.result_phone].filter(Boolean).join(" · "),rev:jb.plan_rev||"",links:jb.plan_links||{},dets:jb.plan_dets||{},sheets:sheets.map(x=>x)});
       const q=Q[i.id]||{};const pick=(k,d)=>q[k]!==undefined?q[k]:d;
       const prev=S[i.id]||{};
       S[i.id]={result:pick("result",i.result),notes:pick("notes",i.notes||""),corr:pick("corrections",i.corrections||""),deliver:pick("delivery",i.delivery||"file"),
