@@ -234,6 +234,36 @@ body.offmode .office{display:block}
 .ogo{margin-top:10px;min-height:44px;padding:0 16px;border:1px solid var(--ink);background:#fff;font-weight:700;cursor:pointer}
 @media (max-width:620px){.res4{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:900px){.ogrid{grid-template-columns:minmax(0,1fr)}.oc.w2{grid-column:auto}}
+.rpt{background:#fff;color:#1C1C1E;border:1px solid #DDDAD3;padding:22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.45;max-width:850px}
+.rpt-lh{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.rpt-logo{display:inline-flex;flex-direction:column}
+.rpt-logo .r1{display:flex}
+.rpt-logo .a{background:#6D282D;color:#fff;font-weight:900;font-size:28px;letter-spacing:.02em;padding:6px 10px;line-height:1;display:flex;align-items:center}
+.rpt-logo .b{background:#141414;color:#fff;font-weight:700;font-size:11.5px;letter-spacing:.06em;padding:6px 10px;line-height:1.25;display:flex;align-items:center}
+.rpt-logo .t{background:#3d4a5c;color:#fff;font-size:8.5px;font-weight:700;letter-spacing:.1em;padding:3px 10px;text-align:center}
+.rpt-contact{font-size:11.5px;text-align:right;color:#3A3C42;line-height:1.5}
+.rpt-rule{height:3px;background:#6D282D;margin:12px 0 14px}
+.rpt-title{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.rpt-title b{font-size:17px;letter-spacing:.06em}
+.rpt-title span{font-size:12.5px;color:#3A3C42;font-family:ui-monospace,Menlo,monospace}
+.rpt-h{background:#3d4a5c;color:#fff;font-weight:700;font-size:12px;letter-spacing:.12em;padding:6px 10px;margin:16px 0 0}
+.rpt-kv{width:100%;border-collapse:collapse;font-size:13.5px}
+.rpt-kv th{background:#f3f5f7;text-align:left;font-weight:700;color:#3A3C42;width:30%;padding:7px 10px;border:1px solid #E3E6EA;vertical-align:top}
+.rpt-kv td{padding:7px 10px;border:1px solid #E3E6EA}
+.rpt-res{display:flex;align-items:center;gap:12px;padding:12px 10px;border:1px solid #E3E6EA;border-top:0}
+.rpt-res b{font-size:20px;letter-spacing:.08em}
+.rpt-res b.pass{color:#1F6B3A}.rpt-res b.fail{color:#A3262A}.rpt-res b.partial{color:#9A6400}.rpt-res b.corr{color:#6D282D}
+.rpt-res span{color:#3A3C42;font-size:13px}
+.rpt-list{list-style:none;margin:0;padding:0;border:1px solid #E3E6EA;border-top:0}
+.rpt-list li{padding:10px;border-top:1px solid #EEF0F2}.rpt-list li:first-child{border-top:0}
+.rpt-tag{font-weight:800;font-size:11.5px;letter-spacing:.1em;color:#A3262A;margin-right:6px}
+.rpt-ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:10px;border:1px solid #E3E6EA;border-top:0}
+.rpt-ph figure{margin:0}.rpt-ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#eee;border:1px solid #DDD}
+.rpt-ph figcaption{font-size:12px;margin-top:4px}.rpt-ph figcaption b{color:#A3262A;letter-spacing:.06em}
+.rpt-cert{padding:10px;border:1px solid #E3E6EA;border-top:0;font-size:13.5px}
+.rpt-sig{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:#3A3C42}
+.rpt-sig b{color:#1C1C1E;font-size:14px}
+.rpt-foot{margin-top:14px;padding-top:8px;border-top:1px solid #DDDAD3;font-size:11px;color:#6B6F7A;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 </style></head><body>
 
 <header class="top">
@@ -384,13 +414,7 @@ function render(){
   if(tab==="notes")pane=`<label for="notes" class="hint" style="display:block;margin:0 0 6px">Field notes for the report</label><textarea id="notes" placeholder="Example: Pile P7 dowels short of plan length. Contractor to verify with EOR before pour.">${esc(s.notes)}</textarea>
     <p class="hint">Saved automatically. Plaud recordings will drop in here in a later version.</p>`;
   const corrList=s.corr.split("\n").map(x=>x.trim()).filter(Boolean);
-  const report=()=>`<div class="rep"><div class="rephead"><span class="mark">AIS</span><div><b>AFTERMATH INSPECTION SERVICES LLC</b><br>Private Provider Inspection Report</div><span class="repdate">${j.repNo?"Report #"+j.repNo+"<br>":""}${new Date(s.doneAt||Date.now()).toLocaleDateString("en-US")}</span></div>
-     <dl class="kv"><dt>Permit</dt><dd style="font-family:var(--mono)">${esc(j.permit)}</dd><dt>Site address</dt><dd>${esc(j.addr)}, ${esc(j.key)}, FL</dd><dt>Jurisdiction</dt><dd>${esc(j.jur||j.county||"")}</dd><dt>Owner</dt><dd>${esc(j.owner||"")}</dd><dt>Contractor</dt><dd>${esc(j.contractor)}</dd><dt>Inspection</dt><dd>${j.code?j.code+" · ":""}${esc(j.name)}</dd><dt>Inspection date</dt><dd>${new Date(s.doneAt||Date.now()).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</dd><dt>Private provider</dt><dd>Aftermath Inspection Services LLC</dd></dl>
-     <div class="repres ${s.result}">${s.result?RL[s.result].toUpperCase():"NO RESULT SELECTED"}</div>
-     ${needsFix(s.result)?`<h3>Corrections required before reinspection</h3>${corrList.length?`<ol class="corr">${corrList.map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:`<p class="empty">No corrections written yet.</p>`}
-       ${s.photos.length?`<h3>Photos</h3><div class="thumbs">${s.photos.map((p,i)=>`<figure><img src="${p}" alt="Photo ${i+1}"><figcaption>PHOTO ${i+1}</figcaption></figure>`).join("")}</div>`:""}`:`<p class="repnote">Photos and field notes are kept on file and are not included on a passed inspection.</p>`}
-     <p class="repcert">${s.result==="pass"?"I hereby certify that the above-referenced inspection has been completed and is in conformance with the approved plans and the applicable codes.":needsFix(s.result)?"This inspection is not approved. Correct the items above and request a reinspection.":""}</p>
-     <p class="repsig"><b>Luigi Vaccaro</b> · License BU2239 · BN7700<br>Building Code Administrator · Standard Inspector<br>Private Provider under s. 553.791, F.S.</p></div>`;
+  const report=()=>rptHTML({repNo:j.repNo,date:s.doneAt||Date.now(),permit:j.permit,addr:j.addr+(j.key?", "+j.key:"")+", FL",jur:j.jur||j.county||"",owner:j.owner,contractor:j.contractor,insp:[j.code,j.name].filter(Boolean).join(" · "),result:s.result,corr:corrList,photos:s.photos.map(u=>({src:u}))});
   const res=s.done?`<div class="donebar"><div class="big">✓ COMPLETED ${tm(s.doneAt)}</div><div>${RL[s.result]} · ${s.deliver==="send"?`Sent to customer ${tm(s.doneAt)}`:"On file, not sent to customer"}${s.photos.length?` · ${s.photos.length} photos`:""}</div></div>
       <div class="rowbtns"><button class="ghostbtn" id="pv">${s.preview?"Hide report":"View report"}</button>${s.deliver!=="send"?`<button class="ghostbtn" id="sendnow">Send to customer now</button>`:""}<button class="reopen" id="reopen">Reopen</button></div>${s.preview?report():""}`
    :`<div class="rbtns">${[["pass","PASS"],["fail","FAIL"],["partial","PARTIAL"],["corr","CORRECTIONS NEEDED"]].map(r=>`<button class="rb ${r[0]}" data-r="${r[0]}" aria-pressed="${s.result===r[0]}">${r[1]}</button>`).join("")}</div>
@@ -692,6 +716,30 @@ async function boot(){
   if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 setInterval(()=>{if(sb&&navigator.onLine&&$("#login").hidden&&document.visibilityState==="visible"&&!cur)load()},120000);
+/* AIS inspection report: same letterhead and layout as the AIS field reports */
+function rptHTML(d){const E=x=>String(x??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const RES={pass:"PASSED",fail:"FAILED",partial:"PARTIAL PASS",corr:"CORRECTIONS NEEDED",cancelled:"CANCELLED"};const fix=d.result&&d.result!=="pass"&&d.result!=="cancelled";
+  const dt=d.date?new Date(d.date):new Date();
+  return `<div class="rpt">
+  <div class="rpt-lh"><div class="rpt-logo"><div class="r1"><span class="a">AIS</span><span class="b">AFTERMATH INSPECTION<br>SERVICES LLC</span></div><div class="t">PRIVATE PROVIDER INSPECTION AND PLAN REVIEW</div></div>
+    <div class="rpt-contact">17130 Amberjack Lane<br>Summerland Key, FL 33042<br>305-900-7529<br>Luigi@aftermathinspections.com<br>aftermathinspections.com</div></div>
+  <div class="rpt-rule"></div>
+  <div class="rpt-title"><b>PRIVATE PROVIDER INSPECTION REPORT</b><span>${d.repNo?"Report #"+E(d.repNo)+" · ":""}${dt.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span></div>
+  <div class="rpt-h">PROJECT INFORMATION</div>
+  <table class="rpt-kv"><tr><th>Permit #</th><td>${E(d.permit)}</td></tr><tr><th>Site address</th><td>${E(d.addr)}</td></tr><tr><th>Jurisdiction</th><td>${E(d.jur)}</td></tr>
+    <tr><th>Owner</th><td>${E(d.owner)}</td></tr><tr><th>Contractor</th><td>${E(d.contractor)}</td></tr><tr><th>Inspection</th><td>${E(d.insp)}</td></tr>
+    <tr><th>Inspection date</th><td>${dt.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</td></tr><tr><th>Private provider</th><td>Aftermath Inspection Services LLC</td></tr></table>
+  <div class="rpt-h">INSPECTION RESULT</div>
+  <div class="rpt-res"><b class="${E(d.result)}">${RES[d.result]||"NO RESULT SELECTED"}</b>${fix?`<span>Not approved. Correct the items below and request a reinspection.</span>`:d.result==="pass"?`<span>Approved.</span>`:""}</div>
+  ${fix?`<div class="rpt-h">CORRECTIONS REQUIRED BEFORE REINSPECTION</div>${(d.corr||[]).length?`<ol class="rpt-list">${d.corr.map((c,i)=>`<li><span class="rpt-tag">CORRECTION ${i+1}</span>${E(c)}</li>`).join("")}</ol>`:`<div class="rpt-cert">No corrections written yet.</div>`}
+    ${(d.photos||[]).length?`<div class="rpt-h">PHOTOS</div><div class="rpt-ph">${d.photos.map((p,i)=>`<figure>${p.src?`<img src="${E(p.src)}" alt="Photo ${i+1}">`:`<img alt="Photo ${i+1}"${p.path?` data-ph="${E(p.path)}"`:""}>`}<figcaption><b>PHOTO ${i+1}</b>${p.cap?" · "+E(p.cap):""}</figcaption></figure>`).join("")}</div>`:""}`
+   :`<div class="rpt-cert" style="color:#5C6170">Photos and field notes are kept on file with the inspection record.</div>`}
+  <div class="rpt-h">CERTIFICATION</div>
+  <div class="rpt-cert">${d.result==="pass"?"I hereby certify that the above-referenced inspection has been completed and is in conformance with the approved plans and the applicable codes.":fix?"I hereby certify that the above-referenced inspection has been completed. The work is not approved until the corrections listed above are made and a reinspection is passed.":"Inspection record."}
+    <div class="rpt-sig"><div><b>Luigi Vaccaro</b><br>Building Code Administrator BU2239 · Standard Inspector BN7700<br>Residential Plans Examiner RPX370 · Commercial Plans Examiner PX4681<br>ICC Certified Building Official</div><div style="text-align:right">Private Provider<br>under s. 553.791, F.S.</div></div></div>
+  <div class="rpt-foot"><span>Aftermath Inspection Services LLC · Private Provider Inspection Report</span><span>${E(d.permit)}${d.repNo?" · #"+E(d.repNo):""}</span></div>
+</div>`}
+
 /* ---- office dashboard ---- */
 let CLIENTS=null, EDC=null;
 const ymdL=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
