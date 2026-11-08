@@ -198,11 +198,45 @@ textarea{width:100%;min-height:180px;font:inherit;font-size:16px;padding:12px;bo
 .noimg{padding:60px 20px;text-align:center;color:var(--mute);background:#fff}
 .upl{display:inline-flex;align-items:center;min-height:46px;padding:0 18px;background:var(--card);border:1px solid var(--ink);font-weight:600;cursor:pointer;margin-top:12px}
 .upl input{display:none}.upmsg{font-size:14px;color:var(--mute);margin-top:8px}
+.offbtn{margin-left:auto;min-height:40px;padding:0 14px;background:#2A2A2D;color:#fff;border:1px solid #555;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.08em;cursor:pointer}
+.offbtn[aria-pressed="true"]{background:var(--maroon);border-color:var(--maroon)}
+.offbtn+.who{margin-left:12px}
+body.offmode .wrap{display:none}
+.office{display:none;max-width:1400px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-left)) 60px}
+body.offmode .office{display:block}
+.office h2{font-family:var(--display);font-size:24px;margin:4px 0 14px}
+.ogrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.oc{background:var(--card);border:1px solid var(--line);padding:16px 18px;min-width:0;overflow-wrap:anywhere}
+.oc.wide{grid-column:1/-1}.oc.w2{grid-column:span 2}
+.oc h3{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--maroon);margin:0 0 10px}
+.big3{display:flex;gap:18px;flex-wrap:wrap}.big3 div{min-width:80px}.big3 b{display:block;font-family:var(--display);font-size:38px;line-height:1}.big3 span{font-size:13px;color:var(--mute)}
+.cap{margin-top:12px;height:14px;background:#EEE;position:relative}.cap i{position:absolute;inset:0 auto 0 0;background:var(--slate)}.cap i.over{background:var(--fail)}.cap i.hit{background:var(--pass)}
+.cap em{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.capl{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin-top:4px}
+.olist{list-style:none;margin:0;padding:0}.olist li{padding:8px 0;border-top:1px solid #EFEDE8;font-size:14.5px;display:flex;gap:10px;align-items:baseline}.olist li:first-child{border-top:0}
+.olist .m{color:var(--mute);font-size:13px}.olist .r{margin-left:auto;font-weight:700;white-space:nowrap}
+.olist .hot{color:var(--fail);font-weight:800;font-size:12px;letter-spacing:.08em}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:150px;margin-top:6px}
+.week .d{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
+.week .bar{width:100%;background:var(--slate);min-height:2px}.week .bar.full{background:var(--maroon)}.week .bar.over{background:var(--fail)}
+.week .n{font-family:var(--display);font-weight:800;font-size:15px;margin-bottom:4px}.week .l{font-size:12px;color:var(--mute);margin-top:6px;text-align:center}
+.week .t5{position:absolute;left:-4px;right:-4px;border-top:2px dashed #999}
+.res4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.res4 div{border-top:4px solid var(--line);padding-top:6px;display:flex;flex-direction:column;justify-content:flex-start}.res4 b{display:block;font-family:var(--display);font-size:28px;line-height:1.1}.res4 span{font-size:12.5px;color:var(--mute)}
+.res4 .pass{border-color:var(--pass)}.res4 .corr{border-color:var(--slate)}.res4 .fail{border-color:var(--fail)}.res4 .partial{border-color:var(--part)}
+.otab{width:100%;min-width:640px;border-collapse:collapse;font-size:14.5px;overflow-wrap:normal}.otab th{text-align:left;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}.otab td{padding:8px;border-bottom:1px solid #EFEDE8}
+.otab .warn{color:var(--part);font-weight:600}.otab .bad{color:var(--fail);font-weight:700}.otab .ok{color:var(--pass)}
+.olinks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}.olinks a{display:block;padding:12px 14px;border:1px solid var(--line);background:#FBFAF7;color:var(--ink);text-decoration:none;font-weight:600;font-size:14.5px}.olinks a span{display:block;font-weight:400;font-size:12.5px;color:var(--mute)}
+.olinks h4{grid-column:1/-1;margin:8px 0 0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.oempty{color:var(--mute);font-size:14.5px;margin:0}
+.ogo{margin-top:10px;min-height:44px;padding:0 16px;border:1px solid var(--ink);background:#fff;font-weight:700;cursor:pointer}
+@media (max-width:620px){.res4{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){.ogrid{grid-template-columns:minmax(0,1fr)}.oc.w2{grid-column:auto}}
 </style></head><body>
 
 <header class="top">
   <span class="mark">AIS</span>
   <h1>FIELD INSPECTIONS</h1>
+  <button class="offbtn" id="offbtn" aria-pressed="false">OFFICE</button>
   <div class="who">Luigi Vaccaro<br>BU2239</div>
 </header>
 <div class="sample sync" id="sync"><span class="dot"></span><b id="synctxt">Connecting…</b><button id="signout" hidden>Sign out</button></div>
@@ -215,6 +249,7 @@ textarea{width:100%;min-height:180px;font:inherit;font-size:16px;padding:12px;bo
   </section>
   <section class="detail" id="detail" aria-live="polite"></section>
 </div>
+<section class="office" id="office" aria-label="Office dashboard"></section>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -632,7 +667,7 @@ async function load(){
   }catch(e){console.warn(e);try{RAW=JSON.parse(localStorage.getItem("ais-cache")||"null")}catch(_){}
     if(!RAW){setSync("off","Can't reach the office database and nothing is saved on this iPad yet.");RAW={jobs:[],insp:[],sheets:[],photos:[]}}}
   Object.values(S).forEach(s=>s._loaded=false);
-  build();signReqPhotos();syncLabel(Object.keys(Q).length+PENDING.length);flush();
+  build();renderOffice();signReqPhotos();syncLabel(Object.keys(Q).length+PENDING.length);flush();
   JOBS.forEach(j=>fetchSheets(j));}
 
 /* ---- sign-in ---- */
@@ -654,6 +689,58 @@ async function boot(){
   if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 setInterval(()=>{if(sb&&navigator.onLine&&$("#login").hidden&&document.visibilityState==="visible"&&!cur)load()},120000);
+/* ---- office dashboard ---- */
+let CLIENTS=null;
+const ymdL=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+async function openOffice(on){document.body.classList.toggle("offmode",on);$("#offbtn").setAttribute("aria-pressed",on);$("#offbtn").textContent=on?"FIELD":"OFFICE";
+  if(!on){render();return}window.scrollTo(0,0);renderOffice();
+  try{const{data,error}=await sb.from("clients").select("*").order("client_no");if(!error){CLIENTS=data||[];renderOffice()}}catch(e){}}
+function renderOffice(){const el=$("#office");if(!el||!document.body.classList.contains("offmode"))return;
+  const R=RAW||{jobs:[],insp:[],reqs:[]},jobs=R.jobs||[],ins=(R.insp||[]).filter(i=>i.code||i.scheduled_date||i.result),reqs=R.reqs||[];
+  const J=id=>jobs.find(j=>j.id===id)||{};const now=new Date(),today=ymdL(now);
+  const isDoneToday=i=>i.done_at&&sameDay(i.done_at,now);
+  const schedToday=ins.filter(i=>i.scheduled_date===today&&i.result!=="cancelled");
+  const doneToday=ins.filter(i=>isDoneToday(i)&&i.result!=="cancelled");
+  const openToday=schedToday.filter(i=>!i.done_at);
+  const load=new Set([...schedToday,...doneToday].map(i=>i.id)).size;
+  const pct=Math.min(100,load*10);
+  const days=[...Array(7)].map((_,k)=>{const d=new Date(now);d.setDate(d.getDate()+k);const key=ymdL(d);
+    const n=ins.filter(i=>i.result!=="cancelled"&&(i.scheduled_date===key||(i.done_at&&ymdL(new Date(i.done_at))===key))).length;
+    return{n,l:k?d.toLocaleDateString("en-US",{weekday:"short"})+"<br>"+(d.getMonth()+1)+"/"+d.getDate():"Today"}});
+  const notSent=ins.filter(i=>i.done_at&&i.result&&i.result!=="cancelled"&&i.delivery!=="send"&&(now-new Date(i.done_at))<45*864e5).sort((a,b)=>String(b.done_at).localeCompare(String(a.done_at)));
+  const m0=new Date(now.getFullYear(),now.getMonth(),1);const month=ins.filter(i=>i.done_at&&new Date(i.done_at)>=m0&&i.result&&i.result!=="cancelled");
+  const cnt=r=>month.filter(i=>i.result===r).length;
+  const byC={};month.forEach(i=>{const j=J(i.job_id),c=(CLIENTS||[]).find(x=>x.id===j.client_id);const k=(c&&c.company)||j.contractor||"Unknown";byC[k]=(byC[k]||0)+1});
+  const cl=(CLIENTS||[]).map(c=>{const mine=jobs.filter(j=>j.client_id===c.id);const exp=(d)=>{if(!d)return`<span class="m">not on file</span>`;const days=Math.round((new Date(d+"T12:00")-now)/864e5);
+      return days<0?`<span class="bad">expired ${esc(d)}</span>`:days<=30?`<span class="warn">${esc(d)} (${days} days)</span>`:`<span class="ok">${esc(d)}</span>`};
+    return`<tr><td><b>${esc(c.company||"")}</b><br><span class="m">ID ${esc(c.client_no||"")}${c.phone?" · "+esc(c.phone):""}</span></td><td>${mine.length}</td><td>${exp(c.license_exp)}</td><td>${exp(c.gl_exp)}</td><td>${exp(c.wc_exp)}</td></tr>`}).join("");
+  el.innerHTML=`<h2>Office · ${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</h2><div class="ogrid">
+  <div class="oc"><h3>Today</h3><div class="big3"><div><b>${load}</b><span>on today</span></div><div><b>${doneToday.length}</b><span>done</span></div><div><b>${openToday.length}</b><span>still open</span></div></div>
+    <div class="cap" role="img" aria-label="${load} of 10 maximum, target 5"><i class="${load>10?"over":load>=5?"hit":""}" style="width:${pct}%"></i><em style="left:50%"></em></div><div class="capl"><span>0</span><span>Target 5</span><span>Max 10</span></div></div>
+  <div class="oc"><h3>New requests (${reqs.length})</h3>${reqs.length?`<ul class="olist">${reqs.slice(0,6).map(r=>`<li><div><b>${esc(r.address||"")}</b><br><span class="m">${esc(r.inspection||"")} · ${esc(r.company||"")}${r.requested_date?" · "+esc(r.requested_date):""}</span></div>${r.urgent?`<span class="r hot">TIME-SENSITIVE</span>`:""}</li>`).join("")}</ul><button class="ogo" id="gofield">Open requests</button>`:`<p class="oempty">Nothing waiting. You're caught up.</p>`}</div>
+  <div class="oc"><h3>Done, not sent to contractor (${notSent.length})</h3>${notSent.length?`<ul class="olist">${notSent.slice(0,6).map(i=>`<li><div><b>${esc(J(i.job_id).address||"")}</b><br><span class="m">${esc([i.code,i.name].filter(Boolean).join(" "))} · ${new Date(i.done_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span></div><span class="r">${esc(RS[i.result]||i.result)}</span></li>`).join("")}</ul>`:`<p class="oempty">Every finished inspection has been sent.</p>`}</div>
+  <div class="oc wide"><h3>Next 7 days</h3><div class="week">${days.map(d=>`<div class="d"><span class="n">${d.n}</span><div class="bar ${d.n>10?"over":d.n>=5?"full":""}" style="height:${Math.min(100,d.n*10)}%"></div><span class="l">${d.l}</span></div>`).join("")}</div><div class="capl" style="margin-top:8px"><span>Bars fill at 10 a day. Maroon means you're at your 5-a-day target, red means over 10.</span></div></div>
+  <div class="oc"><h3>${now.toLocaleDateString("en-US",{month:"long"})} results</h3><div class="res4"><div class="pass"><b>${cnt("pass")}</b><span>Passed</span></div><div class="corr"><b>${cnt("corr")}</b><span>Corrections</span></div><div class="partial"><b>${cnt("partial")}</b><span>Partial</span></div><div class="fail"><b>${cnt("fail")}</b><span>Failed</span></div></div>
+    ${Object.keys(byC).length?`<ul class="olist" style="margin-top:12px">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<li><span>${esc(k)}</span><span class="r">${v}</span></li>`).join("")}</ul>`:`<p class="oempty" style="margin-top:10px">No finished inspections this month yet.</p>`}</div>
+  <div class="oc w2"><h3>Contractors</h3>${CLIENTS==null?`<p class="oempty">Loading…</p>`:CLIENTS.length?`<div style="overflow-x:auto"><table class="otab"><tr><th>Company</th><th>Active jobs</th><th>License exp.</th><th>Liability ins. exp.</th><th>Workers' comp exp.</th></tr>${cl}</table></div><p class="oempty" style="margin-top:8px">Expiration dates fill in from the client intake sheet. Yellow is within 30 days, red is expired.</p>`:`<p class="oempty">No contractors set up yet.</p>`}</div>
+  <div class="oc wide"><h3>Quick links</h3><div class="olinks">
+    <h4>Counties</h4>
+    <a href="https://www.monroecounty-fl.gov/149" target="_blank" rel="noopener">Monroe County Building<span>Permits, contractor and code search</span></a>
+    <a href="https://cvportal.colliercountyfl.gov/CityViewWeb" target="_blank" rel="noopener">Collier GMCD Portal<span>Schedule and upload inspections</span></a>
+    <a href="https://www.collier.gov/Business-Resources/Building-Permits/Private-Provider" target="_blank" rel="noopener">Collier Private Provider<span>Rules and forms</span></a>
+    <a href="https://www.leegov.com/dcd/appinfocenter" target="_blank" rel="noopener">Lee County eConnect<span>Permits and inspections</span></a>
+    <h4>Contractor checks</h4>
+    <a href="https://www.myfloridalicense.com/wl11.asp" target="_blank" rel="noopener">DBPR license lookup<span>Florida contractor licenses</span></a>
+    <a href="https://dwcdataportal.fldfs.com/ProofOfCoverage.aspx" target="_blank" rel="noopener">Workers' comp coverage<span>Florida DFS proof of coverage</span></a>
+    <h4>AIS</h4>
+    <a href="/request/" target="_blank" rel="noopener">Request page<span>aftermathinspections.com/request</span></a>
+    <a href="/" target="_blank" rel="noopener">Website<span>aftermathinspections.com</span></a>
+    <a href="https://supabase.com/dashboard" target="_blank" rel="noopener">Supabase<span>Database and logins</span></a>
+    <a href="https://claude.ai/artifact/CtUJ8udg2c2kZKV69Jx1Kq" target="_blank" rel="noopener">Contractor walkthrough deck<span>How AIS Inspections Work</span></a>
+    <a href="https://claude.ai/artifact/7EgnDH9vS5NZCKzQjW8HmR" target="_blank" rel="noopener">Business plan<span>AIS Business Plan</span></a>
+  </div></div></div>`;
+  const g=$("#gofield");if(g)g.onclick=()=>openOffice(false)}
+$("#offbtn").onclick=()=>openOffice(!document.body.classList.contains("offmode"));
 function bootFail(){setSync("off","No connection. Open the app again once you have signal.")}
 render();
 
