@@ -228,6 +228,9 @@ body.offmode .office{display:block}
 .olinks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}.olinks a{display:block;padding:12px 14px;border:1px solid var(--line);background:#FBFAF7;color:var(--ink);text-decoration:none;font-weight:600;font-size:14.5px}.olinks a span{display:block;font-weight:400;font-size:12.5px;color:var(--mute)}
 .olinks h4{grid-column:1/-1;margin:8px 0 0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
 .oempty{color:var(--mute);font-size:14.5px;margin:0}
+.edbtn{min-height:40px;padding:0 14px;border:1px solid var(--ink);background:#fff;font-weight:700;cursor:pointer}
+.edgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin:10px 0}.edgrid label{font-size:13px;font-weight:600;color:var(--mute);display:flex;flex-direction:column;gap:4px}
+.edgrid input{font:inherit;font-size:16px;padding:9px;border:1px solid var(--line);color:var(--ink)}.edgrid .edchk{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}.edgrid .edchk input{width:20px;height:20px}
 .ogo{margin-top:10px;min-height:44px;padding:0 16px;border:1px solid var(--ink);background:#fff;font-weight:700;cursor:pointer}
 @media (max-width:620px){.res4{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:900px){.ogrid{grid-template-columns:minmax(0,1fr)}.oc.w2{grid-column:auto}}
@@ -690,7 +693,7 @@ async function boot(){
 }
 setInterval(()=>{if(sb&&navigator.onLine&&$("#login").hidden&&document.visibilityState==="visible"&&!cur)load()},120000);
 /* ---- office dashboard ---- */
-let CLIENTS=null;
+let CLIENTS=null, EDC=null;
 const ymdL=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 async function openOffice(on){document.body.classList.toggle("offmode",on);$("#offbtn").setAttribute("aria-pressed",on);$("#offbtn").textContent=on?"FIELD":"OFFICE";
   if(!on){render();return}window.scrollTo(0,0);renderOffice();
@@ -713,7 +716,12 @@ function renderOffice(){const el=$("#office");if(!el||!document.body.classList.c
   const byC={};month.forEach(i=>{const j=J(i.job_id),c=(CLIENTS||[]).find(x=>x.id===j.client_id);const k=(c&&c.company)||j.contractor||"Unknown";byC[k]=(byC[k]||0)+1});
   const cl=(CLIENTS||[]).map(c=>{const mine=jobs.filter(j=>j.client_id===c.id);const exp=(d)=>{if(!d)return`<span class="m">not on file</span>`;const days=Math.round((new Date(d+"T12:00")-now)/864e5);
       return days<0?`<span class="bad">expired ${esc(d)}</span>`:days<=30?`<span class="warn">${esc(d)} (${days} days)</span>`:`<span class="ok">${esc(d)}</span>`};
-    return`<tr><td><b>${esc(c.company||"")}</b><br><span class="m">ID ${esc(c.client_no||"")}${c.phone?" · "+esc(c.phone):""}</span></td><td>${mine.length}</td><td>${exp(c.license_exp)}</td><td>${exp(c.gl_exp)}</td><td>${exp(c.wc_exp)}</td></tr>`}).join("");
+    if(EDC===c.id)return`<tr><td colspan="6"><b>${esc(c.company||"")}</b><div class="edgrid">
+      <label>License #<input id="ed_lno" value="${esc(c.license_no||"")}"></label><label>License expires<input id="ed_lex" type="date" value="${esc(c.license_exp||"")}"></label>
+      <label>Liability ins. expires<input id="ed_gl" type="date" value="${esc(c.gl_exp||"")}"></label><label>Workers' comp expires<input id="ed_wc" type="date" value="${esc(c.wc_exp||"")}"></label>
+      <label class="edchk"><input id="ed_wx" type="checkbox"${c.wc_exempt?" checked":""}> Workers' comp exemption on file</label></div>
+      <button class="ogo" id="ed_save" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Save</button> <button class="ogo" id="ed_cancel">Cancel</button></td></tr>`;
+    return`<tr><td><b>${esc(c.company||"")}</b><br><span class="m">ID ${esc(c.client_no||"")}${c.phone?" · "+esc(c.phone):""}${c.license_no?" · Lic. "+esc(c.license_no):""}</span></td><td>${mine.length}</td><td>${exp(c.license_exp)}</td><td>${exp(c.gl_exp)}</td><td>${c.wc_exempt&&!c.wc_exp?`<span class="ok">Exempt</span>`:exp(c.wc_exp)}</td><td><button class="edbtn" data-edc="${esc(c.id)}">Edit</button></td></tr>`}).join("");
   el.innerHTML=`<h2>Office · ${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</h2><div class="ogrid">
   <div class="oc"><h3>Today</h3><div class="big3"><div><b>${load}</b><span>on today</span></div><div><b>${doneToday.length}</b><span>done</span></div><div><b>${openToday.length}</b><span>still open</span></div></div>
     <div class="cap" role="img" aria-label="${load} of 10 maximum, target 5"><i class="${load>10?"over":load>=5?"hit":""}" style="width:${pct}%"></i><em style="left:50%"></em></div><div class="capl"><span>0</span><span>Target 5</span><span>Max 10</span></div></div>
@@ -722,7 +730,7 @@ function renderOffice(){const el=$("#office");if(!el||!document.body.classList.c
   <div class="oc wide"><h3>Next 7 days</h3><div class="week">${days.map(d=>`<div class="d"><span class="n">${d.n}</span><div class="bar ${d.n>10?"over":d.n>=5?"full":""}" style="height:${Math.min(100,d.n*10)}%"></div><span class="l">${d.l}</span></div>`).join("")}</div><div class="capl" style="margin-top:8px"><span>Bars fill at 10 a day. Maroon means you're at your 5-a-day target, red means over 10.</span></div></div>
   <div class="oc"><h3>${now.toLocaleDateString("en-US",{month:"long"})} results</h3><div class="res4"><div class="pass"><b>${cnt("pass")}</b><span>Passed</span></div><div class="corr"><b>${cnt("corr")}</b><span>Corrections</span></div><div class="partial"><b>${cnt("partial")}</b><span>Partial</span></div><div class="fail"><b>${cnt("fail")}</b><span>Failed</span></div></div>
     ${Object.keys(byC).length?`<ul class="olist" style="margin-top:12px">${Object.entries(byC).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<li><span>${esc(k)}</span><span class="r">${v}</span></li>`).join("")}</ul>`:`<p class="oempty" style="margin-top:10px">No finished inspections this month yet.</p>`}</div>
-  <div class="oc w2"><h3>Contractors</h3>${CLIENTS==null?`<p class="oempty">Loading…</p>`:CLIENTS.length?`<div style="overflow-x:auto"><table class="otab"><tr><th>Company</th><th>Active jobs</th><th>License exp.</th><th>Liability ins. exp.</th><th>Workers' comp exp.</th></tr>${cl}</table></div><p class="oempty" style="margin-top:8px">Expiration dates fill in from the client intake sheet. Yellow is within 30 days, red is expired.</p>`:`<p class="oempty">No contractors set up yet.</p>`}</div>
+  <div class="oc w2"><h3>Contractors</h3>${CLIENTS==null?`<p class="oempty">Loading…</p>`:CLIENTS.length?`<div style="overflow-x:auto"><table class="otab"><tr><th>Company</th><th>Active jobs</th><th>License exp.</th><th>Liability ins. exp.</th><th>Workers' comp exp.</th><th></th></tr>${cl}</table></div><p class="oempty" style="margin-top:8px">Tap Edit to enter dates from their certificates. Contractors see these in their app too. Yellow is within 30 days, red is expired.</p>`:`<p class="oempty">No contractors set up yet.</p>`}</div>
   <div class="oc wide"><h3>Quick links</h3><div class="olinks">
     <h4>Counties</h4>
     <a href="https://www.monroecounty-fl.gov/149" target="_blank" rel="noopener">Monroe County Building<span>Permits, contractor and code search</span></a>
@@ -739,7 +747,13 @@ function renderOffice(){const el=$("#office");if(!el||!document.body.classList.c
     <a href="https://claude.ai/artifact/CtUJ8udg2c2kZKV69Jx1Kq" target="_blank" rel="noopener">Contractor walkthrough deck<span>How AIS Inspections Work</span></a>
     <a href="https://claude.ai/artifact/7EgnDH9vS5NZCKzQjW8HmR" target="_blank" rel="noopener">Business plan<span>AIS Business Plan</span></a>
   </div></div></div>`;
-  const g=$("#gofield");if(g)g.onclick=()=>openOffice(false)}
+  const g=$("#gofield");if(g)g.onclick=()=>openOffice(false);
+  el.querySelectorAll("[data-edc]").forEach(b=>b.onclick=()=>{EDC=b.dataset.edc;renderOffice()});
+  const ec=$("#ed_cancel");if(ec)ec.onclick=()=>{EDC=null;renderOffice()};
+  const es=$("#ed_save");if(es)es.onclick=async()=>{const v=id=>$(id).value.trim()||null;const f={license_no:v("#ed_lno"),license_exp:v("#ed_lex"),gl_exp:v("#ed_gl"),wc_exp:v("#ed_wc"),wc_exempt:$("#ed_wx").checked};
+    es.disabled=true;es.textContent="Saving…";const{error}=await sb.from("clients").update(f).eq("id",EDC);
+    if(error){es.disabled=false;es.textContent="Save";return toast("Couldn't save: "+error.message)}
+    const c=CLIENTS.find(x=>x.id===EDC);Object.assign(c,f);EDC=null;toast("Saved. The contractor will see it in their app.");renderOffice()}}
 $("#offbtn").onclick=()=>openOffice(!document.body.classList.contains("offmode"));
 function bootFail(){setSync("off","No connection. Open the app again once you have signal.")}
 render();

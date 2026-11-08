@@ -93,6 +93,13 @@ textarea{min-height:84px}
 .rphs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}.rphs figure{margin:0;border:1px solid var(--line)}.rphs img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#eee}.rphs figcaption{font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:4px 6px}
 .repnote{font-size:14px;color:var(--mute)}.repcert{font-size:14.5px;line-height:1.45;margin:14px 0 0}
 .repsig{margin-top:16px;font-size:13px;color:var(--mute);border-top:1px solid var(--line);padding-top:10px}
+.papers{background:#fff;border:1px solid var(--line);padding:12px 16px;margin-bottom:14px}
+.papers h2{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--maroon);margin:0 0 6px}
+.prow2{display:flex;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid #EFEDE8;font-size:14.5px}.prow2:first-of-type{border-top:0}
+.prow2 .k{flex:1}.prow2 .k small{display:block;color:var(--mute);font-size:12.5px}
+.pill{font-weight:700;font-size:13px;white-space:nowrap}.pill.ok{color:var(--pass)}.pill.warn{color:var(--part)}.pill.bad{color:var(--fail)}.pill.none{color:var(--mute);font-weight:600}
+.papnote{font-size:13px;color:var(--mute);margin:6px 0 0}
+.papwarn{background:#FBF3DF;border:1px solid #E7D3A1;padding:10px 12px;font-size:14px;margin-top:12px}.papwarn.bad{background:#F8E5E5;border-color:#E2B4B6}
 .plansbtn{display:block;width:calc(100% - 32px);margin:0 16px 12px;min-height:46px;border:1px solid var(--slate);background:#fff;color:var(--slate);font-family:var(--display);font-weight:700;font-size:14.5px;letter-spacing:.04em;cursor:pointer}
 .pv{position:fixed;inset:0;z-index:25;background:#1b1b1b;display:flex;flex-direction:column;color:#ddd}
 .pv[hidden]{display:none}
@@ -132,6 +139,7 @@ textarea{min-height:84px}
     <div class="install" id="install" hidden><button class="x" id="instx" aria-label="Close">×</button>
       <b>Put AIS on your home screen</b>
       <p><b>iPhone:</b> tap Share, then Add to Home Screen.<br><b>Android:</b> tap ⋮ (top right), then Add to Home screen or Install app.</p></div>
+    <div class="papers" id="papers" hidden></div>
     <h1>Your jobs</h1>
     <div id="jobs"><p class="hint">Loading…</p></div>
     <button class="newjob" id="newjob">＋ Request an inspection on a new job</button>
@@ -154,6 +162,7 @@ textarea{min-height:84px}
     <div id="winwrap"><label for="fwin">Time window</label><select id="fwin"><option>Anytime</option><option>First thing AM</option><option>Before noon</option><option>Afternoon</option></select></div></div>
     <label class="check" id="urgwrap"><input id="furg" type="checkbox"> Time-sensitive (pour, crane, holding up work)</label>
     <div class="deadline" id="fdead" hidden></div>
+    <div class="papwarn" id="fpaper" hidden></div>
     <div id="phwrap"><label>Photos <span class="hint">(optional, up to 10)</span></label>
       <label class="pickph">＋ Add photos<input type="file" id="fph" accept="image/*" multiple></label><div class="phs" id="fphs"></div></div>
     <div id="sendwrap"><div class="sendbox"><b>Send the result to</b>
@@ -202,7 +211,18 @@ async function load(){
   JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];SHEETS=(ps&&ps.data)||[];PHOTOS=(pp&&pp.data)||[];render();
 }
 const isPlaceholder=x=>!x.code&&!x.scheduled_date&&!x.result;
-function render(){
+/* license and insurance on file with AIS */
+function papers(){if(!ME)return[];const now=new Date();
+  return[["Contractor license",ME.license_exp,ME.license_no?"License "+ME.license_no:""],["General liability insurance",ME.gl_exp,""],["Workers' comp",ME.wc_exp,ME.wc_exempt?"Exemption on file":""]].map(([k,d,sub])=>{
+    if(!d)return{k,sub,cls:"none",txt:"Not on file",days:null};const days=Math.round((new Date(d+"T12:00")-now)/864e5);const nice2=new Date(d+"T12:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    return{k,sub,d,days,cls:days<0?"bad":days<=30?"warn":"ok",txt:days<0?"Expired "+nice2:days<=30?"Expires "+nice2+" ("+days+(days===1?" day":" days")+")":"Current through "+nice2}})}
+function renderPapers(){const P=papers(),el=$("papers");if(!P.length){el.hidden=true;return}el.hidden=false;
+  el.innerHTML=`<h2>Your license &amp; insurance on file</h2>${P.map(x=>`<div class="prow2"><span class="k">${esc(x.k)}${x.sub?`<small>${esc(x.sub)}</small>`:""}</span><span class="pill ${x.cls}">${esc(x.txt)}</span></div>`).join("")}
+  <p class="papnote">${P.some(x=>x.cls==="bad"||x.cls==="warn")?"Please send Aftermath Inspection Services your updated certificate or license so your inspections keep moving.":P.some(x=>x.cls==="none")?"Missing something? Send it to Aftermath Inspection Services and we'll add it.":"Everything is current. Thank you."}</p>`}
+function paperWarn(){const P=papers().filter(x=>x.cls==="bad"||x.cls==="warn"),el=$("fpaper");if(!P.length){el.hidden=true;return}
+  el.hidden=false;el.className="papwarn"+(P.some(x=>x.cls==="bad")?" bad":"");
+  el.innerHTML=`<b>Heads up:</b> ${P.map(x=>esc(x.k.toLowerCase())+" "+(x.cls==="bad"?"expired":"expires")+" "+esc(new Date(x.d+"T12:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}))).join("; ")}. Please send AIS your updated paperwork.`}
+function render(){renderPapers();
   if(!JOBS.length){$("jobs").innerHTML=`<p class="empty">No jobs on file yet. Use the button below to request your first inspection.</p>`;return}
   $("jobs").innerHTML=JOBS.map(jb=>{
     const mine=INSP.filter(x=>x.job_id===jb.id);
@@ -244,7 +264,7 @@ function openForm(mode,job){
   $("winwrap").hidden=mode==="cx";$("urgwrap").hidden=mode==="cx";$("phwrap").hidden=mode==="cx";
   $("lnotes").textContent=mode==="cx"?"Reason (optional)":"Notes for the inspector";
   $("fsend").textContent={req:"SEND REQUEST",rs:"SEND NEW DATE",cx:"SEND CANCELLATION"}[mode];$("fsend").classList.toggle("red",mode==="cx");$("fsend").disabled=false;
-  setDeadline(county);$("sheet").hidden=false;
+  setDeadline(county);paperWarn();$("sheet").hidden=false;
 }
 function setArea(c){$("farea").innerHTML=(AREAS[c]||["Other"]).map(a=>`<option>${a}</option>`).join("");fillInsp(c);setDeadline(c)}
 function setDeadline(c){const n={Collier:"Collier County: please send by <b>12 noon the business day before</b>.",Lee:"Lee County: please send by <b>12 noon the business day before</b>."}[c];$("fdead").hidden=!n;$("fdead").innerHTML=n||""}
