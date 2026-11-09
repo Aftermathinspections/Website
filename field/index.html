@@ -733,7 +733,7 @@ async function boot(){
   else{showLogin(true);setSync("","Sign in to load your inspections.")}
   if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
-setInterval(()=>{if(sb&&navigator.onLine&&$("#login").hidden&&document.visibilityState==="visible"&&!cur)load()},120000);
+setInterval(()=>{if(sb&&navigator.onLine&&$("#login").hidden&&document.visibilityState==="visible"&&(!cur||document.body.classList.contains("offmode")))load()},120000);
 /* AIS inspection report: same letterhead and layout as the AIS field reports */
 function rptHTML(d){const E=x=>String(x??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const RES={pass:"PASSED",fail:"FAILED",partial:"PARTIAL PASS",corr:"CORRECTIONS NEEDED",cancelled:"CANCELLED"};const fix=d.result&&d.result!=="pass"&&d.result!=="cancelled";
@@ -766,7 +766,8 @@ async function openOffice(on){document.body.classList.toggle("offmode",on);$("#o
   if(!on){render();return}window.scrollTo(0,0);renderOffice();
   try{const{data,error}=await sb.from("clients").select("*").order("client_no");if(!error){CLIENTS=data||[];renderOffice()}}catch(e){}
   try{const{data,error}=await sb.from("intakes").select("*").eq("status","new").order("created_at");if(!error){SIGNUPS=data||[];renderOffice()}}catch(e){}
-  try{const{data,error}=await sb.from("client_docs").select("*").eq("status","new").order("created_at");if(!error){CDOCS=data||[];renderOffice()}}catch(e){}}
+  try{const{data,error}=await sb.from("client_docs").select("*").eq("status","new").order("created_at");if(!error){CDOCS=data||[];renderOffice()}}catch(e){}
+  if(navigator.onLine)try{await flush();await load()}catch(e){}}
 const mkPin=c=>{const l=(String(c||"AIS").replace(/[^A-Za-z]/g,"")+"AIS").slice(0,3);return l[0].toUpperCase()+l.slice(1).toLowerCase()+String(Math.floor(100+Math.random()*900))};
 function renderOffice(){const el=$("#office");if(!el||!document.body.classList.contains("offmode"))return;
   const R=RAW||{jobs:[],insp:[],reqs:[]},jobs=R.jobs||[],ins=(R.insp||[]).filter(i=>i.code||i.scheduled_date||i.result),reqs=R.reqs||[];
@@ -862,7 +863,7 @@ render();
 <script src="county.js"></script>
 <script>
 /* Update check: version.txt holds the newest build; if it differs from APPV, show the update bar. */
-const APPV="2026-11-09b";
+const APPV="2026-11-09c";
 async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();if(v&&v!==APPV)document.getElementById("updbar").hidden=false}catch(e){}}
 document.getElementById("updbar").onclick=async()=>{try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.update()}const ks=await caches.keys();for(const k of ks)if(k.startsWith("ais-field-shell"))await caches.delete(k)}catch(e){}location.replace(location.pathname+"?v="+Date.now())};
 checkUpdate();setInterval(checkUpdate,10*60*1000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate()});
