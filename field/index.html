@@ -228,6 +228,7 @@ body.offmode .office{display:block}
 .olinks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}.olinks a{display:block;padding:12px 14px;border:1px solid var(--line);background:#FBFAF7;color:var(--ink);text-decoration:none;font-weight:600;font-size:14.5px}.olinks a span{display:block;font-weight:400;font-size:12.5px;color:var(--mute)}
 .olinks h4{grid-column:1/-1;margin:8px 0 0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
 .oempty{color:var(--mute);font-size:14.5px;margin:0}
+.updbar{display:block;width:100%;min-height:48px;border:0;background:#1F6B3A;color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer;padding:10px 16px}.updbar[hidden]{display:none}
 .edbtn{min-height:40px;padding:0 14px;border:1px solid var(--ink);background:#fff;font-weight:700;cursor:pointer}
 .ctyflag{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;color:#8A5A00}.ctyflag.red{color:var(--fail)}
 .ctywarn{background:#FFF6E0;border:1px solid #E8C979;padding:8px 10px;font-size:14px;margin:0 0 10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -284,6 +285,7 @@ body.offmode .office{display:block}
   <button class="offbtn" id="offbtn" aria-pressed="false">OFFICE</button>
   <div class="who">Luigi Vaccaro<br>BU2239</div>
 </header>
+<button class="updbar" id="updbar" hidden>A new version of the AIS app is ready. Tap here to update.</button>
 <div class="sample sync" id="sync"><span class="dot"></span><b id="synctxt">Connecting…</b><button id="signout" hidden>Sign out</button></div>
 <div class="login" id="login" hidden><form id="lf" autocomplete="on"><span class="mark">AIS</span><h2>Field sign-in</h2><p>Aftermath Inspection Services</p><label for="em">Email</label><input id="em" type="email" autocapitalize="off" autocorrect="off" name="email" autocomplete="username" required><label for="pw">Password</label><div style="display:flex;gap:8px"><input id="pw" type="password" name="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required style="flex:1"><button type="button" id="pwshow" style="width:auto;margin:0;min-height:0;padding:0 16px;background:#fff;color:var(--ink);border:1px solid var(--line);font-size:15px;letter-spacing:0">Show</button></div><button type="submit">SIGN IN</button><div class="err" id="lerr"></div></form></div>
 
@@ -858,5 +860,12 @@ render();
 
 </script>
 <script src="county.js"></script>
+<script>
+/* Update check: version.txt holds the newest build; if it differs from APPV, show the update bar. */
+const APPV="2026-11-09b";
+async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();if(v&&v!==APPV)document.getElementById("updbar").hidden=false}catch(e){}}
+document.getElementById("updbar").onclick=async()=>{try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.update()}const ks=await caches.keys();for(const k of ks)if(k.startsWith("ais-field-shell"))await caches.delete(k)}catch(e){}location.replace(location.pathname+"?v="+Date.now())};
+checkUpdate();setInterval(checkUpdate,10*60*1000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate()});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" onload="boot()" onerror="bootFail()"></script>
 </body></html>
