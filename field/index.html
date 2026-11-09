@@ -745,11 +745,13 @@ function rptHTML(d){const E=x=>String(x??"").replace(/[&<>"]/g,c=>({"&":"&amp;",
 </div>`}
 
 /* ---- office dashboard ---- */
-let CLIENTS=null, EDC=null;
+let CLIENTS=null, EDC=null, SIGNUPS=[], APV=null, DONE1=null;
 const ymdL=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 async function openOffice(on){document.body.classList.toggle("offmode",on);$("#offbtn").setAttribute("aria-pressed",on);$("#offbtn").textContent=on?"FIELD":"OFFICE";
   if(!on){render();return}window.scrollTo(0,0);renderOffice();
-  try{const{data,error}=await sb.from("clients").select("*").order("client_no");if(!error){CLIENTS=data||[];renderOffice()}}catch(e){}}
+  try{const{data,error}=await sb.from("clients").select("*").order("client_no");if(!error){CLIENTS=data||[];renderOffice()}}catch(e){}
+  try{const{data,error}=await sb.from("intakes").select("*").eq("status","new").order("created_at");if(!error){SIGNUPS=data||[];renderOffice()}}catch(e){}}
+const mkPin=c=>{const l=(String(c||"AIS").replace(/[^A-Za-z]/g,"")+"AIS").slice(0,3);return l[0].toUpperCase()+l.slice(1).toLowerCase()+String(Math.floor(100+Math.random()*900))};
 function renderOffice(){const el=$("#office");if(!el||!document.body.classList.contains("offmode"))return;
   const R=RAW||{jobs:[],insp:[],reqs:[]},jobs=R.jobs||[],ins=(R.insp||[]).filter(i=>i.code||i.scheduled_date||i.result),reqs=R.reqs||[];
   const J=id=>jobs.find(j=>j.id===id)||{};const now=new Date(),today=ymdL(now);
@@ -774,7 +776,17 @@ function renderOffice(){const el=$("#office");if(!el||!document.body.classList.c
       <label class="edchk"><input id="ed_wx" type="checkbox"${c.wc_exempt?" checked":""}> Workers' comp exemption on file</label></div>
       <button class="ogo" id="ed_save" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Save</button> <button class="ogo" id="ed_cancel">Cancel</button></td></tr>`;
     return`<tr><td><b>${esc(c.company||"")}</b><br><span class="m">ID ${esc(c.client_no||"")}${c.phone?" · "+esc(c.phone):""}${c.license_no?" · Lic. "+esc(c.license_no):""}</span></td><td>${mine.length}</td><td>${exp(c.license_exp)}</td><td>${exp(c.gl_exp)}</td><td>${c.wc_exempt&&!c.wc_exp?`<span class="ok">Exempt</span>`:exp(c.wc_exp)}</td><td><button class="edbtn" data-edc="${esc(c.id)}">Edit</button></td></tr>`}).join("");
+  const su=SIGNUPS.map(x=>{const f=(x.files||[]).map((p,i)=>`<button class="edbtn" data-sf="${esc(p)}">${/\.pdf$/.test(p)?"PDF":"Photo"} ${i+1}</button>`).join(" ");
+    return`<li style="display:block"><b>${esc(x.company||"")}</b> <span class="m">· ${esc(x.trade||"")} · signed up ${new Date(x.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span><br>
+    <span class="m">${esc(x.contact_name||"")} · ${esc(x.contact_cell||"")} · ${esc(x.contact_email||"")}</span><br>
+    <span class="m">License ${esc(x.license_no||"")} exp ${esc(x.license_exp||"")} · Liability exp ${esc(x.gl_exp||"")} · Workers' comp ${x.wc_exempt?"exempt":"exp "+esc(x.wc_exp||"not given")} · Signed by ${esc(x.signed_name||"")}</span>
+    ${x.field_contacts?`<br><span class="m">Field: ${esc(x.field_contacts)}</span>`:""}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">${f}
+    ${APV===x.id?`<label style="font-size:13px;font-weight:600">PIN <input id="apv_pin" value="${mkPin(x.company)}" style="width:110px;font:inherit;padding:8px;border:1px solid var(--line)"></label><button class="edbtn" id="apv_go" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Create login</button><button class="edbtn" id="apv_x">Cancel</button>`
+      :`<button class="edbtn" data-apv="${esc(x.id)}" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Approve</button><button class="edbtn" data-sdis="${esc(x.id)}">Dismiss</button>`}</div></li>`}).join("");
   el.innerHTML=`<h2>Office · ${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</h2><div class="ogrid">
+  ${DONE1?`<div class="oc wide" style="border-left:5px solid var(--pass)"><h3>Login created</h3><p style="margin:0 0 8px"><b>${esc(DONE1.company)}</b> · Client ID <b>${DONE1.no}</b> · PIN <b>${esc(DONE1.pin)}</b></p><a class="edbtn" style="display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)" href="sms:${esc(DONE1.cell)}?&body=${encodeURIComponent(DONE1.msg)}">Text it to ${esc(DONE1.cell)}</a> <button class="edbtn" id="done1x">Done</button></div>`:""}
+  ${SIGNUPS.length?`<div class="oc wide"><h3>New sign-ups (${SIGNUPS.length})</h3><ul class="olist">${su}</ul></div>`:""}
   <div class="oc"><h3>Today</h3><div class="big3"><div><b>${load}</b><span>on today</span></div><div><b>${doneToday.length}</b><span>done</span></div><div><b>${openToday.length}</b><span>still open</span></div></div>
     <div class="cap" role="img" aria-label="${load} of 10 maximum, target 5"><i class="${load>10?"over":load>=5?"hit":""}" style="width:${pct}%"></i><em style="left:50%"></em></div><div class="capl"><span>0</span><span>Target 5</span><span>Max 10</span></div></div>
   <div class="oc"><h3>New requests (${reqs.length})</h3>${reqs.length?`<ul class="olist">${reqs.slice(0,6).map(r=>`<li><div><b>${esc(r.address||"")}</b><br><span class="m">${esc(r.inspection||"")} · ${esc(r.company||"")}${r.requested_date?" · "+esc(r.requested_date):""}</span></div>${r.urgent?`<span class="r hot">TIME-SENSITIVE</span>`:""}</li>`).join("")}</ul><button class="ogo" id="gofield">Open requests</button>`:`<p class="oempty">Nothing waiting. You're caught up.</p>`}</div>
@@ -801,6 +813,19 @@ function renderOffice(){const el=$("#office");if(!el||!document.body.classList.c
   </div></div></div>`;
   const g=$("#gofield");if(g)g.onclick=()=>openOffice(false);
   el.querySelectorAll("[data-edc]").forEach(b=>b.onclick=()=>{EDC=b.dataset.edc;renderOffice()});
+  el.querySelectorAll("[data-sf]").forEach(b=>b.onclick=async()=>{const w=window.open("","_blank");try{const{data,error}=await sb.storage.from(BUCKET).createSignedUrl(b.dataset.sf,3600);if(error)throw error;if(w)w.location=data.signedUrl;else location.href=data.signedUrl}catch(e){if(w)w.close();toast("Couldn't open that file.")}});
+  el.querySelectorAll("[data-apv]").forEach(b=>b.onclick=()=>{APV=b.dataset.apv;renderOffice()});
+  el.querySelectorAll("[data-sdis]").forEach(b=>b.onclick=async()=>{if(!confirm("Dismiss this sign-up? It won't create a login."))return;const{error}=await sb.from("intakes").update({status:"dismissed"}).eq("id",b.dataset.sdis);if(error)return toast("Couldn't dismiss: "+error.message);SIGNUPS=SIGNUPS.filter(x=>x.id!==b.dataset.sdis);renderOffice()});
+  const ax=$("#apv_x");if(ax)ax.onclick=()=>{APV=null;renderOffice()};
+  const d1=$("#done1x");if(d1)d1.onclick=()=>{DONE1=null;renderOffice()};
+  const ag=$("#apv_go");if(ag)ag.onclick=async()=>{const pin=$("#apv_pin").value.trim();if(pin.length<6)return toast("PIN needs at least 6 characters.");
+    ag.disabled=true;ag.textContent="Creating…";const x=SIGNUPS.find(y=>y.id===APV);
+    const{data,error}=await sb.rpc("approve_intake",{p_intake:APV,p_pin:pin});
+    if(error){ag.disabled=false;ag.textContent="Create login";return toast("Couldn't create the login: "+error.message)}
+    DONE1={company:x.company,no:data,pin,cell:(x.contact_cell||"").replace(/[^0-9+]/g,""),msg:`Welcome to Aftermath Inspection Services! Your AIS app: aftermathinspections.com/client  Client ID: ${data}  PIN: ${pin}  Sign in, then tap Share and Add to Home Screen. Questions? Call or text 305-900-7529.`};
+    SIGNUPS=SIGNUPS.filter(y=>y.id!==APV);APV=null;
+    try{const r=await sb.from("clients").select("*").order("client_no");if(!r.error)CLIENTS=r.data||[]}catch(e){}
+    renderOffice()};
   const ec=$("#ed_cancel");if(ec)ec.onclick=()=>{EDC=null;renderOffice()};
   const es=$("#ed_save");if(es)es.onclick=async()=>{const v=id=>$(id).value.trim()||null;const f={license_no:v("#ed_lno"),license_exp:v("#ed_lex"),gl_exp:v("#ed_gl"),wc_exp:v("#ed_wc"),wc_exempt:$("#ed_wx").checked};
     es.disabled=true;es.textContent="Saving…";const{error}=await sb.from("clients").update(f).eq("id",EDC);

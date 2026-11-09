@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contractor Sign-up | Aftermath Inspection Services</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#111111">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Libre+Franklin:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--maroon:#6D282D;--maroon-dk:#521E22;--black:#111111;--slate:#414A5B;--paper:#F6F5F2;--ink:#1C1C1E;--mute:#5C6170;--line:#D6D3CC}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Libre Franklin",Arial,sans-serif;color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right))}
+  header .m{background:var(--maroon);color:#fff}
+  header .m .wrap{padding-block:22px 18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .ais{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:44px;line-height:1;letter-spacing:.01em;color:#fff;text-decoration:none}
+  .co{font-family:Archivo,Arial,sans-serif;font-weight:700;font-size:12px;letter-spacing:.14em}
+  header .b{background:var(--black);color:#fff}
+  header .b .wrap{padding-block:14px}
+  header h1{font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:26px;letter-spacing:.03em;margin:0}
+  header .s{background:var(--slate);height:8px}
+  main{padding-block:26px 50px}
+  .lede{margin:0 0 22px;font-size:16px;color:#3A3C42}
+  fieldset{border:0;padding:0;margin:0 0 22px}
+  legend{font-family:Archivo,Arial,sans-serif;font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--maroon);margin-bottom:10px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .full{grid-column:1/-1}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-weight:600;font-size:14.5px;margin-bottom:5px}
+  label span{font-weight:400;color:var(--mute)}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:0}
+  textarea{min-height:96px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--maroon);outline-offset:0;border-color:var(--maroon)}
+  .check{display:flex;gap:10px;align-items:center;font-weight:600;margin-top:4px}
+  .check input{width:22px;height:22px}
+  .send{width:100%;min-height:56px;background:var(--maroon);color:#fff;border:0;font-family:Archivo,Arial,sans-serif;font-weight:800;font-size:18px;letter-spacing:.06em;cursor:pointer}
+  .send:hover,.send:focus-visible{background:var(--maroon-dk)}
+  .after{margin-top:16px;background:#fff;border:1px solid var(--line);padding:14px 16px;font-size:14.5px}
+  .after b{font-family:Archivo,Arial,sans-serif}
+  .after.ok{border-left:6px solid #1F6B3A}.after.bad{border-left:6px solid #A3262A}
+  .deadline{background:#FBF3DF;border:1px solid #E7D3A1;padding:10px 12px;font-size:14.5px}
+  .send:disabled{opacity:.6}
+  .pickph{display:inline-flex;align-items:center;min-height:48px;padding:0 18px;border:1px solid #1C1C1E;background:#fff;font-weight:600;cursor:pointer}
+  .pickph input{display:none}
+  .phs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .phs figure{margin:0;position:relative;width:84px;height:84px}
+  .phs img{width:84px;height:84px;object-fit:cover;border:1px solid var(--line);display:block}
+  .phs button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:#111;color:#fff;font-weight:700;cursor:pointer}
+  .mode{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 0 22px}
+  .mode button{min-height:50px;border:2px solid var(--maroon);background:#fff;color:var(--maroon);font-family:Archivo,Arial,sans-serif;font-weight:700;font-size:15px;cursor:pointer}
+  .mode button[aria-pressed="true"]{background:var(--maroon);color:#fff}
+  body.cx .send{background:#A3262A}
+  body.cx .reqonly{display:none}
+  body.cx .cxhide{display:none}
+  footer{border-top:1px solid var(--line);padding-block:20px 34px;color:var(--mute);font-size:13px}
+  a{color:var(--maroon)}
+  .agree{background:#fff;border:1px solid var(--line);padding:14px 16px;font-size:14.5px}
+  .agree ol{margin:8px 0 0;padding-left:20px}.agree li{margin-bottom:6px}
+  details summary{cursor:pointer;font-weight:600;color:var(--maroon);margin-top:8px}
+  .files{display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:14px}
+  .files span{background:#fff;border:1px solid var(--line);padding:6px 10px}
+  .req{color:#A3262A}
+</style>
+</head>
+<body>
+<header>
+  <div class="m"><div class="wrap"><a class="ais" href="/">AIS</a><span class="co">AFTERMATH INSPECTION SERVICES LLC</span></div></div>
+  <div class="b"><div class="wrap"><h1>CONTRACTOR SIGN-UP</h1></div></div>
+  <div class="s"></div>
+</header>
+<main class="wrap">
+  <p class="lede">Takes about 3 minutes. When you're done, we text you your Client ID and PIN for your AIS app.</p>
+  <form id="f" novalidate>
+    <fieldset><legend>Your company</legend><div class="grid">
+      <div class="full"><label for="company">Company name <b class="req">*</b></label><input id="company" autocomplete="organization" required></div>
+      <div><label for="trade">Trade</label><select id="trade"><option>General contractor</option><option>Plumbing</option><option>Roofing</option><option>Windows and doors</option><option>Mechanical / HVAC</option><option>Electrical</option><option>Other</option></select></div>
+      <div><label for="cphone">Office phone</label><input id="cphone" type="tel" autocomplete="tel"></div>
+      <div class="full"><label for="addr">Mailing address <span>(for invoices)</span></label><input id="addr" autocomplete="street-address"></div>
+    </div></fieldset>
+    <fieldset><legend>You</legend><div class="grid">
+      <div class="full"><label for="name">Your name <b class="req">*</b></label><input id="name" autocomplete="name" required></div>
+      <div><label for="cell">Cell <b class="req">*</b> <span>(we text your login here)</span></label><input id="cell" type="tel" autocomplete="tel" required></div>
+      <div><label for="email">Email <b class="req">*</b></label><input id="email" type="email" autocomplete="email" autocapitalize="off" required></div>
+      <div class="full"><label for="field">Supers or foremen <span>(optional: name and cell, one per line)</span></label><textarea id="field" style="min-height:70px"></textarea></div>
+      <div><label for="remail">Send results to: email <span>(if different)</span></label><input id="remail" type="email" autocapitalize="off"></div>
+      <div><label for="bemail">Invoices to: email <span>(if different)</span></label><input id="bemail" type="email" autocapitalize="off"></div>
+    </div></fieldset>
+    <fieldset><legend>License &amp; insurance</legend><div class="grid">
+      <div><label for="lic">Florida contractor license # <b class="req">*</b></label><input id="lic" autocapitalize="characters" required></div>
+      <div><label for="licexp">License expires <b class="req">*</b></label><input id="licexp" type="date" required></div>
+      <div><label for="glexp">Liability insurance expires <b class="req">*</b></label><input id="glexp" type="date" required></div>
+      <div><label for="wcexp">Workers' comp expires</label><input id="wcexp" type="date"><label class="check" style="font-weight:500;font-size:14px"><input id="wcx" type="checkbox"> I have a workers' comp exemption</label></div>
+      <div class="full"><label>Insurance certificates <span>(photo or PDF: liability and workers' comp or exemption)</span></label>
+        <label class="pickph">+ Add certificates<input type="file" id="docs" accept="image/*,application/pdf" multiple></label>
+        <div class="files" id="files"></div>
+        <p style="font-size:13.5px;color:var(--mute);margin:8px 0 0">Ask your agent to list <b>Aftermath Inspection Services LLC, Summerland Key, FL 33042</b> as certificate holder.</p></div>
+    </div></fieldset>
+    <fieldset><legend>Agreement</legend><div class="agree">
+      <b>Working with AIS, in short:</b>
+      <ol>
+        <li>AIS does your plan review and required inspections as your private provider under s. 553.791, F.S.</li>
+        <li>You file the Notice to Building Official with the owner's acknowledgment, keep your license and insurance current, and give safe access to the work.</li>
+        <li>Work that doesn't pass isn't approved until it's fixed and reinspected. Same-day reinspections are at no charge.</li>
+        <li>Fees are quoted in writing per job. We invoice about halfway through the job and at final.</li>
+      </ol>
+      <details><summary>Read the full service agreement</summary><ol>
+        <li><b>Services.</b> AIS performs the plan review and/or required building code inspections for each permit Contractor assigns to AIS, under s. 553.791, F.S.</li>
+        <li><b>Contractor's duties.</b> Contractor files the Notice to Building Official with the owner's acknowledgment, keeps its license and insurance current, gives AIS safe access to the work, and requests inspections through the AIS app or by email.</li>
+        <li><b>Scheduling.</b> AIS schedules requests in the order received, within its daily capacity, and may reschedule for weather or safety.</li>
+        <li><b>Results.</b> AIS issues a written result for each inspection. Work that does not pass is not approved until corrected and reinspected. Same-day reinspections are at no charge.</li>
+        <li><b>Fees and payment.</b> Fees are as quoted in writing per job. AIS invoices about halfway through the job and at final.</li>
+        <li><b>Insurance.</b> AIS carries the insurance required by s. 553.791, F.S. Contractor keeps general liability and workers' compensation (or an exemption) in force and lists AIS as certificate holder.</li>
+        <li><b>Scope.</b> AIS inspects visible, accessible work for code compliance. AIS does not supervise the work, act as engineer of record, or guarantee the work.</li>
+        <li><b>Term.</b> This agreement covers every job Contractor assigns to AIS until either party ends it in writing. Jobs already started are completed under these terms.</li>
+      </ol></details>
+      <label class="check" style="margin-top:14px"><input id="agree" type="checkbox"> I agree to the AIS service agreement</label>
+      <label for="sig" style="margin-top:12px">Type your full name to sign <b class="req">*</b></label><input id="sig" autocomplete="name">
+    </div></fieldset>
+    <button class="send" type="submit" id="sendbtn">SIGN UP</button>
+    <div class="after" id="after" hidden></div>
+  </form>
+</main>
+<footer><div class="wrap">Aftermath Inspection Services LLC · Private Provider under F.S. §553.791 · Licensed contractors only · <a href="/">Home</a></div></footer>
+<script>
+  const SB_URL="https://lfihnfgrkrxdxzmeuyph.supabase.co", SB_KEY="sb_publishable_ewvQxbyA7lEuC0tTfZZfvg_LtAm5TGd", NTFY="https://ntfy.sh/ais-req-5ba423ff27aa";
+  const $=id=>document.getElementById(id);let DOCS=[];
+  const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  function shrink(file,max=2200){if(!/^image\//.test(file.type))return Promise.resolve(file);return new Promise(res=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),"image/jpeg",.85)};im.onerror=()=>res(file);im.src=u})}
+  function drawFiles(){$("files").innerHTML=DOCS.map((d,i)=>`<span>${esc(d.name)} <button type="button" data-rm="${i}" aria-label="Remove ${esc(d.name)}" style="float:right;border:0;background:none;color:#A3262A;font-weight:700;cursor:pointer">Remove</button></span>`).join("");
+    $("files").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{DOCS.splice(+b.dataset.rm,1);drawFiles()})}
+  $("docs").onchange=async e=>{for(const f of [...e.target.files]){if(DOCS.length>=8)break;const blob=await shrink(f);DOCS.push({name:f.name,blob,pdf:f.type==="application/pdf"})}e.target.value="";drawFiles()};
+  $("wcx").onchange=()=>{$("wcexp").disabled=$("wcx").checked};
+  $("f").addEventListener("submit",async e=>{e.preventDefault();const after=$("after");after.hidden=true;
+    const need=["company","name","cell","email","lic","licexp","glexp","sig"].filter(k=>!$(k).value.trim());
+    if(need.length){const el=$(need[0]);el.focus();el.setCustomValidity("Required");el.reportValidity();el.setCustomValidity("");return}
+    if(!$("agree").checked){$("agree").focus();after.className="after bad";after.innerHTML="<b>Please check the box to agree</b> to the service agreement.";after.hidden=false;return}
+    const btn=$("sendbtn");btn.disabled=true;btn.textContent="SENDING…";
+    try{
+      const folder="intake/"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));const files=[];
+      for(let i=0;i<DOCS.length;i++){const d=DOCS[i];const path=folder+"/"+(i+1)+(d.pdf?".pdf":".jpg");
+        const u=await fetch(SB_URL+"/storage/v1/object/files/"+path,{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":d.pdf?"application/pdf":"image/jpeg","x-upsert":"false"},body:d.blob});
+        if(!u.ok)throw new Error("upload "+u.status);files.push(path)}
+      const v=k=>$(k).value.trim()||null;
+      const row={status:"new",company:v("company"),trade:v("trade"),address:v("addr"),phone:v("cphone"),contact_name:v("name"),contact_cell:v("cell"),contact_email:v("email"),
+        field_contacts:v("field"),result_email:v("remail")||v("email"),result_phone:v("cell"),billing_email:v("bemail")||v("email"),
+        license_no:(v("lic")||"").toUpperCase(),license_exp:v("licexp"),gl_exp:v("glexp"),wc_exp:$("wcx").checked?null:v("wcexp"),wc_exempt:$("wcx").checked,
+        files,agreed:true,signed_name:v("sig"),signed_at:new Date().toISOString()};
+      const r=await fetch(SB_URL+"/rest/v1/intakes",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify(row)});
+      if(!r.ok)throw new Error("status "+r.status);
+      fetch(NTFY,{method:"POST",headers:{"Title":"New contractor sign-up","Tags":"bust_in_silhouette"},body:row.company+" ("+row.contact_name+", "+row.contact_cell+"). Approve in Office."}).catch(()=>{});
+      $("f").querySelectorAll("fieldset").forEach(x=>x.hidden=true);btn.hidden=true;
+      after.className="after ok";after.innerHTML=`<b>You're signed up.</b> Thank you, ${esc(row.contact_name)}. We'll text your Client ID and PIN to ${esc(row.contact_cell)} once we've checked your paperwork, usually the same day.`;after.hidden=false;window.scrollTo(0,0);
+    }catch(err){console.warn(err);btn.disabled=false;btn.textContent="SIGN UP";after.className="after bad";after.innerHTML="<b>That didn't go through.</b> Check your signal and tap Sign up again, or call or text 305-900-7529.";after.hidden=false}
+  });
+</script>
+</body>
+</html>
