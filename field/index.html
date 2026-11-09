@@ -230,6 +230,7 @@ body.offmode .office{display:block}
 .oempty{color:var(--mute);font-size:14.5px;margin:0}
 .updbar{display:block;width:100%;min-height:48px;border:0;background:#1F6B3A;color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer;padding:10px 16px}.updbar[hidden]{display:none}
 .edbtn{min-height:40px;padding:0 14px;border:1px solid var(--ink);background:#fff;font-weight:700;cursor:pointer}
+.olist .jur{color:var(--ink);font-weight:700}
 .ctyflag{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;color:#8A5A00}.ctyflag.red{color:var(--fail)}
 .ctywarn{background:#FFF6E0;border:1px solid #E8C979;padding:8px 10px;font-size:14px;margin:0 0 10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .cbtns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
@@ -869,7 +870,7 @@ render();
 <script src="county.js"></script>
 <script>
 /* Update check: version.txt holds the newest build; if it differs from APPV, show the update bar. */
-const APPV="2026-11-09d";
+const APPV="2026-11-09e";
 async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();if(v&&v!==APPV)document.getElementById("updbar").hidden=false}catch(e){}}
 document.getElementById("updbar").onclick=async()=>{try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.update()}const ks=await caches.keys();for(const k of ks)if(k.startsWith("ais-field-shell"))await caches.delete(k)}catch(e){}location.replace(location.pathname+"?v="+Date.now())};
 checkUpdate();setInterval(checkUpdate,10*60*1000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate()});

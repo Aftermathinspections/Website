@@ -1,4 +1,4 @@
-/* AIS Field: Monroe County private provider paperwork.
+/* AIS Field: private provider paperwork (Monroe County official pages; AIS-letterhead copy for cities, Collier and Lee).
    Fills the county's own form pages (forms/monroe-report.pdf, forms/monroe-cert.pdf)
    with job + inspection data and Luigi's signature, then hands back a PDF to upload to Oracle. */
 const PP={firm:"Aftermath Inspection Services LLC",name:"Luigi Vaccaro",addr:"Summerland Key, FL 33042",
@@ -8,7 +8,12 @@ const SIG_PATH="sig/signature.png";
 const FINAL_CODES=/^(199|291|292|293|294|295|296|297|399|499|599|699|798|799|891|892)$/;
 let SIG_STATE=null, SIG_BYTES=null, CTY_BUSY=null;
 
-const ctyMonroe=j=>((j&&j.county)||"Monroe")==="Monroe";
+const JURS=["Monroe County","City of Key West","City of Marathon","Islamorada","City of Key Colony Beach","City of Layton","Collier County","Lee County"];
+function ctyJur(j){if(!j)return"Monroe County";const t=String(j.jurisdiction||"").trim();
+  if(t){const m=JURS.find(x=>x.toLowerCase()===t.toLowerCase());if(m)return m;if(/collier/i.test(t))return"Collier County";if(/\blee\b/i.test(t))return"Lee County";if(/key west/i.test(t))return"City of Key West";return t}
+  const c=j.county||"Monroe";if(c==="Monroe"&&/^BLD\d{4}-\d+/i.test(j.permit||""))return"City of Key West";return c==="Monroe"?"Monroe County":c+" County"}
+const ctyOfficial=j=>ctyJur(j)==="Monroe County";
+const ctyMonroe=j=>true; // every job gets paperwork now; Monroe County uses the county's own pages, others the AIS-letterhead copy
 const ctyD=v=>{if(!v)return"";const d=new Date(String(v).length<=10?v+"T12:00":v);return isNaN(d)?"":`${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`};
 const ctyIsFinal=i=>FINAL_CODES.test(String(i.code||"").trim())||/final/i.test(i.name||"");
 const ctyFile=s=>String(s||"").replace(/[^A-Za-z0-9-]+/g,"-").replace(/^-|-$/g,"").slice(0,40)||"job";
@@ -45,7 +50,7 @@ function ctyHead(pg,font,bold,blue,job,date,rows){const H=792;const T=(x,y,s,sz=
   T(145,rows[4],PP.addr);T(395,rows[4],PP.lic,8);
   T(145,rows[5],PP.phone);T(395,rows[5],PP.email,8)}
 
-async function ctyReportPdf(insp){const L=await ctyLib();const job=(RAW.jobs||[]).find(j=>j.id===insp.job_id)||{};
+async function ctyMonroeReport(insp){const L=await ctyLib();const job=(RAW.jobs||[]).find(j=>j.id===insp.job_id)||{};
   const doc=await L.PDFDocument.load(await ctyTemplate("monroe-report.pdf"));const pg=doc.getPage(0);const H=792;
   const font=await doc.embedFont(L.StandardFonts.Helvetica),bold=await doc.embedFont(L.StandardFonts.HelveticaBold);const blue=L.rgb(.05,.15,.55);
   const date=ctyD(insp.done_at||insp.scheduled_date);
@@ -63,7 +68,7 @@ async function ctyReportPdf(insp){const L=await ctyLib();const job=(RAW.jobs||[]
   const sig=await ctySig();if(sig){const im=await doc.embedPng(sig);const h=24,w=Math.min(210,im.width*h/im.height);pg.drawImage(im,{x:118,y:H-753,width:w,height:h})}
   return doc.save()}
 
-async function ctyCertPdf(jobId){const L=await ctyLib();const job=(RAW.jobs||[]).find(j=>j.id===jobId)||{};
+async function ctyMonroeCert(jobId){const L=await ctyLib();const job=(RAW.jobs||[]).find(j=>j.id===jobId)||{};
   const passed=(RAW.insp||[]).filter(i=>i.job_id===jobId&&i.result==="pass"&&i.done_at).sort((a,b)=>String(a.done_at).localeCompare(String(b.done_at)));
   const tpl=await ctyTemplate("monroe-cert.pdf");const src=await L.PDFDocument.load(tpl);const doc=await L.PDFDocument.create();
   const font=await doc.embedFont(L.StandardFonts.Helvetica),bold=await doc.embedFont(L.StandardFonts.HelveticaBold);const blue=L.rgb(.05,.15,.55);
@@ -93,23 +98,23 @@ function ctyPanels(){const R=RAW||{jobs:[],insp:[]},jobs=R.jobs||[],ins=R.insp||
   const sigRow=SIG_STATE==="yes"?`<p class="m" style="margin:0 0 8px">Your signature is on file and goes on every form. <button class="edbtn" id="sig_new" style="min-height:32px;padding:0 10px">Re-sign</button></p>`
     :SIG_STATE==="no"?`<div class="ctywarn">Your signature isn't on file yet. Forms will have a blank signature line. <button class="edbtn" id="sig_new" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Sign once</button></div>`:"";
   const repLi=reps.map(i=>{const j=J(i.job_id),m=miss(j),p=ctyPapers(j,i.done_at);
-    return`<li><div><b>${esc(j.address||"")}</b> · ${esc([i.code,i.name].filter(Boolean).join(" "))}<br><span class="m">Permit ${esc(j.permit||"")} · ${ctyD(i.done_at)} · <b style="color:${RC[i.result]||"inherit"}">${RL[i.result]||esc(i.result)}</b></span>
+    return`<li><div><b>${esc(j.address||"")}</b> · ${esc([i.code,i.name].filter(Boolean).join(" "))}<br><span class="m"><b class="jur">${esc(ctyJur(j))}</b> · Permit ${esc(j.permit||"")} · ${ctyD(i.done_at)} · <b style="color:${RC[i.result]||"inherit"}">${RL[i.result]||esc(i.result)}</b></span>
       ${m.length?`<br><span class="ctyflag">Missing ${m.join(" and ")}. Add it on the job's Inspection tab.</span>`:""}
       ${p.state==="no"?`<br><span class="ctyflag red">Contractor papers: ${esc(p.why)}. Form says NO; county will cancel until current.</span>`:p.state==="unknown"?`<br><span class="ctyflag">Contractor papers: ${esc(p.why)}. Form says YES; check before uploading.</span>`:""}</div>
       <div class="cbtns"><button class="edbtn" data-crep="${esc(i.id)}">${CTY_BUSY===i.id?"Making PDF…":"View / Download"}</button><button class="edbtn" data-cup="${esc(i.id)}">Mark uploaded</button></div></li>`}).join("");
   const certLi=certs.map(j=>{const ps=ins.filter(i=>i.job_id===j.id&&i.result==="pass"&&i.done_at),fin=ps.some(ctyIsFinal),m=miss(j);
-    return`<li><div><b>${esc(j.address||"")}</b> · Permit ${esc(j.permit||"")}<br><span class="m">${ps.length} passed inspection${ps.length===1?"":"s"} listed · </span>${fin?`<b style="color:var(--pass)">READY: final passed</b>`:`<span class="m">running list, not final yet</span>`}
+    return`<li><div><b>${esc(j.address||"")}</b> · Permit ${esc(j.permit||"")}<br><span class="m"><b class="jur">${esc(ctyJur(j))}</b> · ${ps.length} passed inspection${ps.length===1?"":"s"} listed · </span>${fin?`<b style="color:var(--pass)">READY: final passed</b>`:`<span class="m">running list, not final yet</span>`}
       ${m.length?`<br><span class="ctyflag">Missing ${m.join(" and ")}.</span>`:""}</div>
       <div class="cbtns"><button class="edbtn" data-ccert="${esc(j.id)}">${CTY_BUSY===j.id?"Making PDF…":"View / Download"}</button>${fin?`<button class="edbtn" data-ccup="${esc(j.id)}">Mark uploaded</button>`:""}</div></li>`}).join("");
-  return`<div class="oc wide"><h3>County reports to upload (${reps.length})</h3>${sigRow}${reps.length?`<ul class="olist">${repLi}</ul><p class="m" style="margin:8px 0 0;font-size:13px;color:var(--mute)">Monroe: upload each report to the permit in Oracle (Online Permitting). Legacy permits: email to upperkeysinspections or lowerkeysinspections within 2 business days.</p>`:`<p class="oempty">Nothing to upload. Every Monroe inspection report is in.</p>`}</div>
-  <div class="oc wide"><h3>Certificates of compliance (${certs.length})</h3>${certs.length?`<ul class="olist">${certLi}</ul><p class="m" style="margin:8px 0 0;font-size:13px;color:var(--mute)">Each job's certificate adds a line every time an inspection passes. When the final passes: schedule "Private Provider Certificate of Inspection Compliance" on the permit, then upload this.</p>`:`<p class="oempty">No Monroe jobs with passed inspections yet.</p>`}</div>`}
+  return`<div class="oc wide"><h3>County &amp; city reports to upload (${reps.length})</h3>${sigRow}${reps.length?`<ul class="olist">${repLi}</ul><p class="m" style="margin:8px 0 0;font-size:13px;color:var(--mute)">Monroe County: upload to the permit in Oracle (Online Permitting), or email upperkeysinspections / lowerkeysinspections for legacy permits. City of Key West, other cities, Collier and Lee: these use the AIS-letterhead form. Submit the way that building department asks.</p>`:`<p class="oempty">Nothing to upload. Every inspection report is in.</p>`}</div>
+  <div class="oc wide"><h3>Certificates of compliance (${certs.length})</h3>${certs.length?`<ul class="olist">${certLi}</ul><p class="m" style="margin:8px 0 0;font-size:13px;color:var(--mute)">Each job's certificate adds a line every time an inspection passes. When the final passes: schedule "Private Provider Certificate of Inspection Compliance" on the permit, then upload this.</p>`:`<p class="oempty">No jobs with passed inspections yet.</p>`}</div>`}
 
 function ctyBind(el){ctyCheckSig();
   el.querySelectorAll("[data-crep]").forEach(b=>b.onclick=async()=>{const i=(RAW.insp||[]).find(x=>x.id===b.dataset.crep);if(!i||CTY_BUSY)return;CTY_BUSY=i.id;b.textContent="Making PDF…";
-    try{const j=(RAW.jobs||[]).find(x=>x.id===i.job_id)||{};ctySave(await ctyReportPdf(i),`Monroe-PP-Report_${ctyFile(j.permit)}_${ctyFile(i.code||"insp")}_${ctyD(i.done_at).replace(/\//g,"-")}.pdf`)}
+    try{const j=(RAW.jobs||[]).find(x=>x.id===i.job_id)||{};ctySave(await ctyReportPdf(i),`${ctyFile(ctyJur(j))}-PP-Report_${ctyFile(j.permit)}_${ctyFile(i.code||"insp")}_${ctyD(i.done_at).replace(/\//g,"-")}.pdf`)}
     catch(e){console.error(e);toast("Couldn't make the PDF: "+(e.message||e))}CTY_BUSY=null;renderOffice()});
   el.querySelectorAll("[data-ccert]").forEach(b=>b.onclick=async()=>{const id=b.dataset.ccert;if(CTY_BUSY)return;CTY_BUSY=id;b.textContent="Making PDF…";
-    try{const j=(RAW.jobs||[]).find(x=>x.id===id)||{};ctySave(await ctyCertPdf(id),`Monroe-PP-Certificate_${ctyFile(j.permit)}.pdf`)}
+    try{const j=(RAW.jobs||[]).find(x=>x.id===id)||{};ctySave(await ctyCertPdf(id),`${ctyFile(ctyJur(j))}-PP-Certificate_${ctyFile(j.permit)}.pdf`)}
     catch(e){console.error(e);toast("Couldn't make the PDF: "+(e.message||e))}CTY_BUSY=null;renderOffice()});
   el.querySelectorAll("[data-cup]").forEach(b=>b.onclick=async()=>{const id=b.dataset.cup,now=new Date().toISOString();
     const{error}=await sb.from("inspections").update({county_up_at:now}).eq("id",id);if(error)return toast("Couldn't mark it: "+error.message);
@@ -144,12 +149,83 @@ function ctySigPad(){const ov=document.createElement("div");ov.className="sigov"
     SIG_BYTES=new Uint8Array(await blob.arrayBuffer());SIG_STATE="yes";ov.remove();toast("Signature saved");renderOffice()}}
 
 /* ---- job Inspection tab: owner + Site RE # ---- */
-function ctyJobFields(j){const jb=(RAW.jobs||[]).find(x=>x.id===j.jobId)||{};const need=ctyMonroe(jb);
-  return`<dt>Owner</dt><dd><input class="jin" id="ji_owner" value="${esc(jb.owner_name||"")}" placeholder="Owner name" aria-label="Owner name"></dd>
+function ctyJobFields(j){const jb=(RAW.jobs||[]).find(x=>x.id===j.jobId)||{};const need=ctyMonroe(jb);const cj=ctyJur(jb);const opts=JURS.includes(cj)?JURS:[...JURS,cj];
+  return`<dt>Jurisdiction</dt><dd><select class="jin" id="ji_jur" aria-label="Jurisdiction">${opts.map(o=>`<option${o===cj?" selected":""}>${esc(o)}</option>`).join("")}</select><br><span class="m" style="font-size:12.5px">${cj==="Monroe County"?"County forms: Monroe's own pages.":"County forms: AIS letterhead, addressed to "+esc(cj)+"."}</span></dd><dt>Owner</dt><dd><input class="jin" id="ji_owner" value="${esc(jb.owner_name||"")}" placeholder="Owner name" aria-label="Owner name"></dd>
     <dt>Site RE #</dt><dd><input class="jin" id="ji_re" value="${esc(jb.parcel_re||"")}" placeholder="e.g. 00123456-000100" aria-label="Site RE number" style="font-family:var(--mono)">
     <button class="edbtn" id="ji_save" data-job="${esc(j.jobId)}" style="margin-left:6px">Save</button>${need&&(!jb.owner_name||!jb.parcel_re)?`<br><span class="ctyflag">Needed for the Monroe county forms.</span>`:""}</dd>`}
 document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.closest("#ji_save");if(!b)return;
-  const id=b.dataset.job,f={owner_name:$("#ji_owner").value.trim()||null,parcel_re:$("#ji_re").value.trim()||null};
+  const id=b.dataset.job,f={owner_name:$("#ji_owner").value.trim()||null,parcel_re:$("#ji_re").value.trim()||null,jurisdiction:$("#ji_jur").value};
   b.disabled=true;b.textContent="Saving…";const{error}=await sb.from("jobs").update(f).eq("id",id);b.disabled=false;b.textContent="Save";
   if(error)return toast("Couldn't save: "+error.message);const jb=(RAW.jobs||[]).find(x=>x.id===id);if(jb)Object.assign(jb,f);
-  JOBS.forEach(x=>{if(x.jobId===id)x.owner=f.owner_name||""});toast("Saved for the county forms")});
+  JOBS.forEach(x=>{if(x.jobId===id){x.owner=f.owner_name||"";x.jur=f.jurisdiction}});toast("Saved for the county forms");if(typeof render==="function")render()});
+
+/* ---- AIS-letterhead copy of the county forms, for City of Key West, other cities, Collier and Lee ---- */
+const AIS_C={maroon:[.427,.157,.176],black:[.078,.078,.078],slate:[.239,.29,.361],gray:[.35,.37,.42],ink:[.08,.08,.1],blue:[.05,.15,.55]};
+async function ctyAisPage(L,doc,jurName,title){const pg=doc.addPage([612,792]);const H=792;
+  const F={r:await doc.embedFont(L.StandardFonts.Helvetica),b:await doc.embedFont(L.StandardFonts.HelveticaBold),i:await doc.embedFont(L.StandardFonts.HelveticaOblique)};
+  const C=a=>L.rgb(a[0],a[1],a[2]);
+  const T=(x,top,s,o={})=>pg.drawText(String(s??""),{x,y:H-top,size:o.size||9,font:o.b?F.b:o.i?F.i:F.r,color:C(o.c||AIS_C.ink)});
+  const TC=(top,s,o={})=>{const f=o.b?F.b:o.i?F.i:F.r,sz=o.size||9;T(306-f.widthOfTextAtSize(String(s),sz)/2,top,s,o)};
+  const R=(x,top,w,h,o={})=>pg.drawRectangle({x,y:H-top-h,width:w,height:h,color:o.fill?C(o.fill):undefined,borderColor:o.line?C(o.line):undefined,borderWidth:o.line?(o.lw||.8):0});
+  const Ln=(x1,t1,x2,t2,w=.8)=>pg.drawLine({start:{x:x1,y:H-t1},end:{x:x2,y:H-t2},thickness:w,color:C(AIS_C.black)});
+  const W=(x,top,text,width,o={})=>{const f=o.b?F.b:o.i?F.i:F.r,sz=o.size||8.5,lh=o.lh||sz*1.25;const lines=ctyWrap(text,f,sz,width);lines.forEach((ln,k)=>T(x,top+k*lh,ln,o));return top+lines.length*lh};
+  const BOX=(x,top,on)=>{R(x,top,11,11,{line:AIS_C.black,lw:1});if(on){pg.drawLine({start:{x:x+2,y:H-top-2},end:{x:x+9,y:H-top-9},thickness:1.6,color:C(AIS_C.blue)});pg.drawLine({start:{x:x+2,y:H-top-9},end:{x:x+9,y:H-top-2},thickness:1.6,color:C(AIS_C.blue)})}};
+  // letterhead
+  R(36,30,92,40,{fill:AIS_C.maroon});T(52,61,"AIS",{b:1,size:26,c:[1,1,1]});
+  R(128,30,448,40,{fill:AIS_C.black});T(142,55,"AFTERMATH INSPECTION SERVICES LLC",{b:1,size:15,c:[1,1,1]});
+  R(36,70,540,14,{fill:AIS_C.slate});TC(80,"PRIVATE PROVIDER INSPECTION AND PLAN REVIEW  ·  FLORIDA STATUTES 553.791",{b:1,size:7.5,c:[1,1,1]});
+  TC(97,`${PP.addr}  ·  ${PP.phone}  ·  ${PP.email}  ·  aftermathinspections.com`,{size:8,c:AIS_C.gray});
+  TC(124,title,{b:1,size:15});TC(141,"Submitted to: "+jurName+" Building Department",{b:1,size:10,c:AIS_C.maroon});
+  T(36,784,"AIS private provider form · same fields and certification as the Monroe County Building Department private provider form",{size:6.5,c:AIS_C.gray});
+  return{pg,F,T,TC,R,Ln,W,BOX,H}}
+function ctyAisInfo(k,top,job,date){const{T,R,Ln,W,F}=k;const rows=[["Permit #",job.permit,"Date:",date],["Site Address:",[job.address,job.area].filter(Boolean).join(", ")+", FL","Site RE #:",job.parcel_re],["Owner Name:",job.owner_name,"Contractor:",job.contractor],["Private Provider Firm:",PP.firm,"Private Provider Name:",PP.name],["Private Provider Address:",PP.addr,"Florida License, Registration or Certificate #:",PP.lic],["Private Provider Telephone:",PP.phone,"Private Provider Email Address:",PP.email]];
+  const rh=23;R(36,top,540,rh*rows.length,{line:AIS_C.black});Ln(306,top,306,top+rh*rows.length);
+  rows.forEach((r,i)=>{const t=top+i*rh;if(i)Ln(36,t,576,t,.6);
+    [[40,r[0],r[1]],[310,r[2],r[3]]].forEach(([x,lab,val])=>{const ls=ctyWrap(lab,F.b,6.6,92);ls.slice(0,3).forEach((l,j)=>T(x,t+8+j*7,l,{b:1,size:6.6}));
+      T(x+96,t+14,ctyFit(val||"",F.r,8.5,164),{size:8.5,c:AIS_C.blue})})});
+  return top+rh*rows.length}
+async function ctyAisReport(insp,jurName){const L=await ctyLib();const job=(RAW.jobs||[]).find(j=>j.id===insp.job_id)||{};const doc=await L.PDFDocument.create();
+  const k=await ctyAisPage(L,doc,jurName,"PRIVATE PROVIDER INSPECTION REPORT");const{T,W,BOX,Ln,R,F,pg,H}=k;const date=ctyD(insp.done_at||insp.scheduled_date);
+  let y=W(36,160,"At the completion of each inspection the private provider shall provide the record on this form to the local building official. These inspection records shall reflect those inspections required by the applicable codes of each phase of construction for which permitting by the building department is required.",540,{size:8.5});
+  y=ctyAisInfo(k,y+5,job,date)+16;
+  T(36,y,"Inspection Code:",{b:1,size:10});T(122,y,insp.code||"",{b:1,size:10,c:AIS_C.blue});T(320,y,"Inspection Date:",{b:1,size:10});T(406,y,date,{b:1,size:10,c:AIS_C.blue});
+  y+=15;T(36,y,"Type of Inspection:",{b:1,size:10});T(136,y,ctyFit(insp.name||"",F.b,10,430),{b:1,size:10,c:AIS_C.blue});
+  const pap=ctyPapers(job,insp.done_at);
+  y+=17;T(36,y,"CONTRACTOR(S) ON PERMIT:",{b:1,size:9});
+  BOX(40,y+6,pap.state!=="no");y=W(58,y+15,"YES, all contractors on the permit are currently active; business tax, state/county license, liability insurance and worker's compensation are current.",515,{size:8.5,b:1});
+  BOX(40,y+1,pap.state==="no");y=W(58,y+10,"NO, there are one or more contractors on the permit that are inactive; business tax, state/county license, liability insurance and worker's compensation are NOT current. If NO, the inspection will be cancelled until all contractors become current on the permit and the Inspection Report resubmitted.",515,{size:8.5,b:1});
+  y+=5;T(36,y,"CERTIFICATE OF ELEVATION:",{b:1,size:9});
+  y=W(36,y+12,"Does passed inspection (for new construction or elevated additions) establish the lowest floor elevation in AE flood zones or the bottom of the lowest horizontal structural member in VE zones?",540,{size:8.5,b:1});
+  BOX(40,y+1,false);y=W(58,y+10,"YES - Preliminary Certificate of Elevation will be required within 21 days of this passed inspection. NO FURTHER INSPECTIONS WILL BE ALLOWED TO BE SCHEDULED after 21 days unless a Preliminary Certificate of Elevation has been received and approved by the Floodplain Management staff.",515,{size:8.5,b:1});
+  BOX(40,y+1,true);T(58,y+10,"NO, not required at this time.",{b:1,size:8.5});y+=25;
+  T(36,y,"INSPECTION RESULT:",{b:1,size:10});y+=8;const rs=insp.result;
+  [["Passed",40,"pass"],["Failed (Reason Required)",150,"fail"],["Incomplete",330,"partial"],["Cancelled",450,"cancelled"]].forEach(([lab,x,key])=>{BOX(x,y,rs===key);T(x+16,y+9,lab,{b:1,size:9.5})});
+  y+=25;T(36,y,"FAIL REASON w/ FBC cited:",{b:1,size:8.5});y+=5;R(36,y,540,62,{line:AIS_C.black});
+  if(rs&&rs!=="pass"){let ls=ctyWrap(insp.corrections||insp.notes||"",F.r,8,528);if(ls.length>6){ls=ls.slice(0,6);ls[5]=ctyFit(ls[6],F.r,8,420)+" … (full list on AIS report)"}ls.forEach((l,j)=>T(42,y+11+j*9.6,l,{size:8,c:AIS_C.blue}))}
+  y+=74;y=W(36,y,"I hereby certify that the above-referenced inspection has been completed in conformance with the approved plans and the applicable codes.",540,{b:1,size:8.5});
+  y+=14;T(36,y,"By:",{b:1,size:10});Ln(58,y+2,330,y+2);T(64,y-1,PP.byLine,{b:1,size:10,c:AIS_C.blue});T(150,y+10,"(Print Name)",{size:6.5});T(400,y,"SEAL",{b:1,size:10});
+  y+=27;T(36,y,"Certified:",{b:1,size:10});Ln(86,y+2,330,y+2);T(190,y+10,"(Signature)",{size:6.5});
+  const sig=await ctySig();if(sig){const im=await doc.embedPng(sig);const h=22,w=Math.min(200,im.width*h/im.height);pg.drawImage(im,{x:92,y:H-y-1,width:w,height:h})}
+  return doc.save()}
+async function ctyAisCert(jobId,jurName){const L=await ctyLib();const job=(RAW.jobs||[]).find(j=>j.id===jobId)||{};
+  const passed=(RAW.insp||[]).filter(i=>i.job_id===jobId&&i.result==="pass"&&i.done_at).sort((a,b)=>String(a.done_at).localeCompare(String(b.done_at)));
+  const doc=await L.PDFDocument.create();const sig=await ctySig();const im=sig?await doc.embedPng(sig):null;const today=ctyD(new Date().toISOString());
+  const per=28,pages=Math.max(1,Math.ceil(passed.length/per));
+  for(let p=0;p<pages;p++){const k=await ctyAisPage(L,doc,jurName,"PRIVATE PROVIDER CERTIFICATE OF INSPECTION(s)/COMPLIANCE");const{T,W,R,Ln,F,pg,H}=k;
+    let y=W(36,160,"Upon completion of all required inspections the private provider shall prepare a Certificate of Inspection(s)/Compliance, summarizing all required inspections (see Section 105 of the Florida Building Code for minimum required inspections) performed and including a written representation, under oath, that the stated inspections have been performed and that the building construction inspected complies with the approved plans and applicable codes.",540,{size:8});
+    y=ctyAisInfo(k,y+5,job,today)+12;
+    y=W(36,y,"To the best of my knowledge and belief, as a private provider, as authorized in s. 553.791, Florida Statutes; the building components and site improvements outlined herein and inspected under my authority have been completed in conformance with the approved plans and applicable codes and standards, as well as all related permit documents. In the event of a conflict between codes and documents, the more restrictive have applied. I further certify that the structure, electrical, gas, mechanical and plumbing systems (as applicable) have been erected in accordance with requirements of the technical codes, and that if required the Certificates of Elevation have been submitted in a timely manner and approved. I affirm that I am qualified under F.S. s. 553.791 to provide building inspection services as authorized by s. 553.791, Florida Statutes. It is understood that the undersigned hereby accepts the responsibility for performing all of the required inspections identified in this document. I certify that ALL inspections were performed (and passed) as detailed in Section 105 of the Florida Building Code, the permit card, and as prescribed by the local authority having jurisdiction.",540,{size:7.8,lh:9.6})+6;
+    const top=y,rh=11.5,cols=[36,246,306,516,576];R(36,top,540,14+rh*14,{line:AIS_C.black});
+    pg.drawRectangle({x:36,y:H-top-14,width:540,height:14,color:L.rgb(.92,.91,.89)});
+    [["INSPECTION TYPE",40],["DATE",250],["INSPECTION TYPE",310],["DATE",520]].forEach(([s2,x])=>T(x,top+10,s2,{b:1,size:7.5}));
+    cols.slice(1,4).forEach(x=>Ln(x,top,x,top+14+rh*14,.6));for(let r=0;r<=14;r++)Ln(36,top+14+r*rh,576,top+14+r*rh,.4);
+    passed.slice(p*per,(p+1)*per).forEach((i,n)=>{const c=n<14?0:1,t=top+14+(n%14)*rh+8.5;T(c?310:40,t,ctyFit([i.code,i.name].filter(Boolean).join(" "),F.r,7.8,c?200:200),{size:7.8,c:AIS_C.blue});T(c?520:250,t,ctyD(i.done_at),{size:7.8,c:AIS_C.blue})});
+    y=top+14+rh*14+11;T(36,y,pages>1?`Page ${p+1} of ${pages}. Inspections continue on the next page.`:"All passed inspections on this permit are listed above.",{i:1,size:7.5});
+    y+=18;T(36,y,"Building Code Administrator / Architect / Engineer, Inspector as recognized s. 553.791 F.S.:",{b:1,size:8.5});
+    y+=26;Ln(36,y+2,296,y+2);Ln(316,y+2,576,y+2);T(40,y-1,PP.certName,{b:1,size:8.5,c:AIS_C.blue});
+    if(im){const h=24,w=Math.min(240,im.width*h/im.height);pg.drawImage(im,{x:322,y:H-y+1,width:w,height:h})}
+    T(40,y+10,"PRINTED NAME OF Building Code Administrator / Architect / Engineer, Inspector",{size:6});T(320,y+10,"SIGNATURE OF Building Code Administrator / Architect / Engineer",{size:6});
+    y+=28;T(36,y,"(DATE)",{b:1,size:8.5});Ln(70,y+2,250,y+2);T(76,y-1,today,{size:8.5,c:AIS_C.blue});T(316,y,"(PHONE #:)",{b:1,size:8.5});Ln(368,y+2,576,y+2);T(374,y-1,PP.phone,{size:8.5,c:AIS_C.blue})}
+  return doc.save()}
+async function ctyReportPdf(insp){const j=(RAW.jobs||[]).find(x=>x.id===insp.job_id)||{};return ctyOfficial(j)?ctyMonroeReport(insp):ctyAisReport(insp,ctyJur(j))}
+async function ctyCertPdf(jobId){const j=(RAW.jobs||[]).find(x=>x.id===jobId)||{};return ctyOfficial(j)?ctyMonroeCert(jobId):ctyAisCert(jobId,ctyJur(j))}
