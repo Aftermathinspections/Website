@@ -172,7 +172,7 @@ textarea{min-height:84px}
 
 <div class="login" id="login" hidden><form id="lf" autocomplete="on">
   <span class="mark">AIS</span><h2>Client sign-in</h2><p>Aftermath Inspection Services</p>
-  <label for="cid">Client ID</label><input id="cid" inputmode="numeric" autocomplete="username" required placeholder="e.g. 1001">
+  <label for="cid">Client ID</label><input id="cid" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="username" required placeholder="e.g. P1001">
   <label for="pin">PIN</label><input id="pin" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required placeholder="PIN">
   <button class="big" type="submit">SIGN IN</button><div class="err" id="lerr"></div>
   <p class="hint" style="margin-top:14px">No Client ID yet? Call or email Aftermath Inspection Services.</p>
@@ -266,7 +266,7 @@ async function load(){
   const c=await sb.from("clients").select("*").limit(1);
   if(c.error||!c.data.length){$("jobs").innerHTML=`<p class="empty">Your account isn't linked to any jobs yet. Please contact Aftermath Inspection Services.</p>`;return}
   ME=c.data[0];
-  $("who").innerHTML=`${esc((ME.company||"CLIENT").toUpperCase())}<span>Client ID ${esc(ME.client_no||"")}</span>`;
+  $("who").innerHTML=`${esc((ME.company||"CLIENT").toUpperCase())}<span>Client ID ${esc(ME.client_code||ME.client_no||"")}</span>`;
   const [j,i,r,ps,pp]=await Promise.all([sb.from("jobs").select("*").neq("status","removed").order("created_at"),sb.from("inspections").select("*"),sb.from("requests").select("*").eq("status","new").order("created_at"),sb.from("plan_sheets").select("id,job_id,idx,num,title,path").order("idx"),sb.from("photos").select("inspection_id,path").order("created_at")]);
   JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];SHEETS=(ps&&ps.data)||[];PHOTOS=(pp&&pp.data)||[];render();
 }
@@ -457,12 +457,12 @@ $("ff").onsubmit=async e=>{e.preventDefault();$("ferr").textContent="";
 };
 
 async function boot(){
-  try{const q=new URLSearchParams(location.search).get("id");if(q&&/^\d{3,6}$/.test(q)){$("cid").value=q;try{localStorage.setItem("ais-cid",q)}catch(e){}}else{const r=localStorage.getItem("ais-cid");if(r)$("cid").value=r}}catch(e){}
+  try{const q=new URLSearchParams(location.search).get("id");if(q&&/^[A-Za-z]?\d{3,6}$/.test(q)){$("cid").value=q;try{localStorage.setItem("ais-cid",q)}catch(e){}}else{const r=localStorage.getItem("ais-cid");if(r)$("cid").value=r}}catch(e){}
   sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"ais-client-auth"}});
-  $("lf").onsubmit=async e=>{e.preventDefault();$("lerr").textContent="";const id=$("cid").value.replace(/\D/g,""),pin=$("pin").value.trim();
+  $("lf").onsubmit=async e=>{e.preventDefault();$("lerr").textContent="";const raw=$("cid").value.trim().toUpperCase().replace(/[^A-Z0-9]/g,""),code=/^[A-Z]\d+$/.test(raw)?raw:raw.replace(/\D/g,""),id=code,pin=$("pin").value.trim();try{localStorage.setItem("ais-cid",code)}catch(_){}
     if(!id||!pin){$("lerr").textContent="Enter your Client ID and PIN.";return}
     const b=e.target.querySelector("button[type=submit]");b.disabled=true;b.textContent="SIGNING IN…";
-    const{error}=await sb.auth.signInWithPassword({email:`c${id}@clients.aftermathinspections.com`,password:pin});
+    const{error}=await sb.auth.signInWithPassword({email:(/^[A-Z]/.test(id)?id.toLowerCase():"c"+id)+"@clients.aftermathinspections.com",password:pin});
     b.disabled=false;b.textContent="SIGN IN";
     if(error){$("lerr").textContent=/invalid/i.test(error.message)?"That Client ID and PIN don't match.":error.message;return}
     show(true)};

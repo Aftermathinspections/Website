@@ -769,6 +769,9 @@ async function openOffice(on){document.body.classList.toggle("offmode",on);$("#o
   try{const{data,error}=await sb.from("client_docs").select("*").eq("status","new").order("created_at");if(!error){CDOCS=data||[];renderOffice()}}catch(e){}
   if(navigator.onLine)try{await flush();await load()}catch(e){}}
 const mkPin=c=>{const l=(String(c||"AIS").replace(/[^A-Za-z]/g,"")+"AIS").slice(0,3);return l[0].toUpperCase()+l.slice(1).toLowerCase()+String(Math.floor(100+Math.random()*900))};
+const TRADE_PFX=[[/plumb/i,"P"],[/roof/i,"R"],[/mech|hvac/i,"M"],[/elec/i,"E"]];
+function nextCode(trade){const m=TRADE_PFX.find(([re])=>re.test(trade||""));if(!m)return"";const px=m[1];
+  const nums=(CLIENTS||[]).map(c=>String(c.client_code||"").toUpperCase()).filter(c=>c.startsWith(px)).map(c=>+c.slice(1)||0);return px+Math.max(1001,...nums.map(n=>n+1))}
 function renderOffice(){const el=$("#office");if(!el||!document.body.classList.contains("offmode"))return;
   const R=RAW||{jobs:[],insp:[],reqs:[]},jobs=R.jobs||[],ins=(R.insp||[]).filter(i=>i.code||i.scheduled_date||i.result),reqs=R.reqs||[];
   const J=id=>jobs.find(j=>j.id===id)||{};const now=new Date(),today=ymdL(now);
@@ -792,14 +795,14 @@ function renderOffice(){const el=$("#office");if(!el||!document.body.classList.c
       <label>Liability ins. expires<input id="ed_gl" type="date" value="${esc(c.gl_exp||"")}"></label><label>Workers' comp expires<input id="ed_wc" type="date" value="${esc(c.wc_exp||"")}"></label>
       <label class="edchk"><input id="ed_wx" type="checkbox"${c.wc_exempt?" checked":""}> Workers' comp exemption on file</label></div>
       <button class="ogo" id="ed_save" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Save</button> <button class="ogo" id="ed_cancel">Cancel</button></td></tr>`;
-    return`<tr><td><b>${esc(c.company||"")}</b><br><span class="m">ID ${esc(c.client_no||"")}${c.phone?" · "+esc(c.phone):""}${c.license_no?" · Lic. "+esc(c.license_no):""}</span></td><td>${mine.length}</td><td>${exp(c.license_exp)}</td><td>${exp(c.gl_exp)}</td><td>${c.wc_exempt&&!c.wc_exp?`<span class="ok">Exempt</span>`:exp(c.wc_exp)}</td><td><button class="edbtn" data-edc="${esc(c.id)}">Edit</button></td></tr>`}).join("");
+    return`<tr><td><b>${esc(c.company||"")}</b><br><span class="m">ID ${esc(c.client_code||c.client_no||"")}${c.phone?" · "+esc(c.phone):""}${c.license_no?" · Lic. "+esc(c.license_no):""}</span></td><td>${mine.length}</td><td>${exp(c.license_exp)}</td><td>${exp(c.gl_exp)}</td><td>${c.wc_exempt&&!c.wc_exp?`<span class="ok">Exempt</span>`:exp(c.wc_exp)}</td><td><button class="edbtn" data-edc="${esc(c.id)}">Edit</button></td></tr>`}).join("");
   const su=SIGNUPS.map(x=>{const f=(x.files||[]).map((p,i)=>`<button class="edbtn" data-sf="${esc(p)}">${/\.pdf$/.test(p)?"PDF":"Photo"} ${i+1}</button>`).join(" ");
     return`<li style="display:block"><b>${esc(x.company||"")}</b> <span class="m">· ${esc(x.trade||"")} · signed up ${new Date(x.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span><br>
     <span class="m">${esc(x.contact_name||"")} · ${esc(x.contact_cell||"")} · ${esc(x.contact_email||"")}</span><br>
     <span class="m">License ${esc(x.license_no||"")} exp ${esc(x.license_exp||"")} · Liability exp ${esc(x.gl_exp||"")} · Workers' comp ${x.wc_exempt?"exempt":"exp "+esc(x.wc_exp||"not given")} · Signed by ${esc(x.signed_name||"")}</span>
     ${x.field_contacts?`<br><span class="m">Field: ${esc(x.field_contacts)}</span>`:""}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">${f}
-    ${APV===x.id?`<label style="font-size:13px;font-weight:600">PIN <input id="apv_pin" value="${mkPin(x.company)}" style="width:110px;font:inherit;padding:8px;border:1px solid var(--line)"></label><button class="edbtn" id="apv_go" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Create login</button><button class="edbtn" id="apv_x">Cancel</button>`
+    ${APV===x.id?`<label style="font-size:13px;font-weight:600">Client ID <input id="apv_code" value="${nextCode(x.trade)}" placeholder="auto number" style="width:110px;font:inherit;padding:8px;border:1px solid var(--line);text-transform:uppercase"></label><label style="font-size:13px;font-weight:600">PIN <input id="apv_pin" value="${mkPin(x.company)}" style="width:110px;font:inherit;padding:8px;border:1px solid var(--line)"></label><button class="edbtn" id="apv_go" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Create login</button><button class="edbtn" id="apv_x">Cancel</button>`
       :`<button class="edbtn" data-apv="${esc(x.id)}" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Approve</button><button class="edbtn" data-sdis="${esc(x.id)}">Dismiss</button>`}</div></li>`}).join("");
   el.innerHTML=`<h2>Office · ${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</h2><div class="ogrid">
   ${DONE1?`<div class="oc wide" style="border-left:5px solid var(--pass)"><h3>Login created</h3><p style="margin:0 0 8px"><b>${esc(DONE1.company)}</b> · Client ID <b>${DONE1.no}</b> · PIN <b>${esc(DONE1.pin)}</b></p><a class="edbtn" style="display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)" href="sms:${esc(DONE1.cell)}?&body=${encodeURIComponent(DONE1.msg)}">Text it to ${esc(DONE1.cell)}</a> <button class="edbtn" id="done1c">Copy message</button> <button class="edbtn" id="done1x">Done</button><p style="margin:8px 0 0;font-size:13px;color:var(--mute)">If the text doesn't go out, tap Copy message and paste it into Messages, email or WhatsApp.</p></div>`:""}
@@ -843,8 +846,11 @@ function renderOffice(){const el=$("#office");if(!el||!document.body.classList.c
     dc.textContent=ok?"Copied ✓":"Copy failed";setTimeout(()=>{if(dc.isConnected)dc.textContent="Copy message"},2500)};
   const ag=$("#apv_go");if(ag)ag.onclick=async()=>{const pin=$("#apv_pin").value.trim();if(pin.length<6)return toast("PIN needs at least 6 characters.");
     ag.disabled=true;ag.textContent="Creating…";const x=SIGNUPS.find(y=>y.id===APV);
-    const{data,error}=await sb.rpc("approve_intake",{p_intake:APV,p_pin:pin});
+    const want=($("#apv_code").value||"").trim().toUpperCase().replace(/\s/g,"");
+    if(want&&!/^[A-Z]?\d{3,6}$/.test(want)){ag.disabled=false;ag.textContent="Create login";return toast("Client ID should look like P1001, or leave it blank for the next number.")}
+    let{data,error}=await sb.rpc("approve_intake",{p_intake:APV,p_pin:pin});
     if(error){ag.disabled=false;ag.textContent="Create login";return toast("Couldn't create the login: "+error.message)}
+    if(want&&want!==String(data)){const r=await sb.rpc("set_client_code",{p_client_no:data,p_code:want});if(r.error)toast("Login works with ID "+data+". Couldn't switch it to "+want+": "+r.error.message);else data=r.data||want}
     DONE1={company:x.company,no:data,pin,cell:(x.contact_cell||"").replace(/[^0-9+]/g,""),msg:`Welcome to Aftermath Inspection Services!\nYour AIS app: https://aftermathinspections.com/client/?id=${data}\nClient ID: ${data}  PIN: ${pin}\n\nPut it on your phone (one time):\niPhone: open the link in Safari, sign in, tap the Share button (square with the arrow), then "Add to Home Screen."\nAndroid: open the link in Chrome, sign in, tap the 3 dots at the top, then "Add to Home screen."\n\nAfter that, just tap the AIS icon on your home screen.\nQuestions? Call or text 305-900-7529.`};
     SIGNUPS=SIGNUPS.filter(y=>y.id!==APV);APV=null;
     try{const r=await sb.from("clients").select("*").order("client_no");if(!r.error)CLIENTS=r.data||[]}catch(e){}
@@ -863,7 +869,7 @@ render();
 <script src="county.js"></script>
 <script>
 /* Update check: version.txt holds the newest build; if it differs from APPV, show the update bar. */
-const APPV="2026-11-09c";
+const APPV="2026-11-09d";
 async function checkUpdate(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();if(v&&v!==APPV)document.getElementById("updbar").hidden=false}catch(e){}}
 document.getElementById("updbar").onclick=async()=>{try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.update()}const ks=await caches.keys();for(const k of ks)if(k.startsWith("ais-field-shell"))await caches.delete(k)}catch(e){}location.replace(location.pathname+"?v="+Date.now())};
 checkUpdate();setInterval(checkUpdate,10*60*1000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate()});
