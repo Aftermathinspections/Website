@@ -55,7 +55,7 @@ async function ctyReportPdf(insp){const L=await ctyLib();const job=(RAW.jobs||[]
   T(190,366,insp.code||"",10,true);T(445,366,date,10,true);T(185,381,ctyFit(insp.name||"",bold,10,355),10,true);
   const pap=ctyPapers(job,insp.done_at);X(67,pap.state==="no"?446:419);
   X(67,581); // Certificate of Elevation: NO, not required at this time
-  const res=insp.result;X({pass:68,fail:175,corr:175,partial:331,cancelled:450}[res]||68,621);
+  const res=insp.result,rx={pass:68,fail:175,partial:331,cancelled:450}[res];if(rx)X(rx,621); // "corr" ticks nothing: Failed only when marked Fail
   if(res&&res!=="pass"){let lines=ctyWrap(insp.corrections||insp.notes||"",font,7.2,395);
     if(lines.length>3){lines=lines.slice(0,3);lines[2]=ctyFit(lines[2],font,7.2,300)+" … (full list on AIS report)"}
     lines.forEach((ln,k)=>T(158,647+k*8.6,ln,7.2))}
@@ -87,8 +87,8 @@ function ctySave(bytes,name){const blob=new Blob([bytes],{type:"application/pdf"
 function ctyPanels(){const R=RAW||{jobs:[],insp:[]},jobs=R.jobs||[],ins=R.insp||[];const J=id=>jobs.find(j=>j.id===id);
   const reps=ins.filter(i=>i.done_at&&i.result&&!i.county_up_at&&J(i.job_id)&&ctyMonroe(J(i.job_id))).sort((a,b)=>String(a.done_at).localeCompare(String(b.done_at)));
   const certs=jobs.filter(j=>ctyMonroe(j)&&!j.cert_up_at&&ins.some(i=>i.job_id===j.id&&i.result==="pass"&&i.done_at));
-  const RL={pass:"Passed",fail:"Failed",corr:"Failed (corrections)",partial:"Incomplete",cancelled:"Cancelled"};
-  const RC={pass:"var(--pass)",fail:"var(--fail)",corr:"var(--fail)",partial:"var(--part)",cancelled:"var(--mute)"};
+  const RL={pass:"Passed",fail:"Failed",corr:"Corrections (no result box ticked)",partial:"Incomplete",cancelled:"Cancelled"};
+  const RC={pass:"var(--pass)",fail:"var(--fail)",corr:"var(--part)",partial:"var(--part)",cancelled:"var(--mute)"};
   const miss=j=>[!j.parcel_re&&"Site RE #",!j.owner_name&&"owner name"].filter(Boolean);
   const sigRow=SIG_STATE==="yes"?`<p class="m" style="margin:0 0 8px">Your signature is on file and goes on every form. <button class="edbtn" id="sig_new" style="min-height:32px;padding:0 10px">Re-sign</button></p>`
     :SIG_STATE==="no"?`<div class="ctywarn">Your signature isn't on file yet. Forms will have a blank signature line. <button class="edbtn" id="sig_new" style="background:var(--maroon);color:#fff;border-color:var(--maroon)">Sign once</button></div>`:"";
