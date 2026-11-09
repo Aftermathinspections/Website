@@ -427,7 +427,7 @@ function render(){
      <button class="ghostbtn" id="pv">${s.preview?"Hide customer report":"Preview customer report"}</button>${s.preview?report():""}
      <button class="complete" id="complete" ${s.result&&(!needsFix(s.result)||corrList.length)?"":"disabled"}>${s.deliver==="send"?"COMPLETE &amp; SEND":"COMPLETE INSPECTION"}</button>
      ${needsFix(s.result)&&!corrList.length?`<p class="hint">Write at least one correction to complete a ${RL[s.result].toLowerCase()} inspection.</p>`:""}
-     <div class="rowbtns"><button class="reopen" id="reschinsp">Reschedule</button><button class="reopen cxl" id="cancelinsp" style="margin-top:0">Cancel this inspection</button><button class="reopen cxl" id="delinsp" style="margin-top:0;margin-left:auto">Delete (test or mistake)</button></div>`;
+     <div class="rowbtns"><button class="reopen" id="reschinsp">Reschedule</button><button class="reopen cxl" id="cancelinsp" style="margin-top:0">Cancel this inspection</button><button class="reopen cxl" id="delinsp" style="margin-top:0;margin-left:auto">${!j.code&&/^Next inspection/i.test(j.name||"")?"Remove this job":"Delete (test or mistake)"}</button></div>`;
   el.innerHTML=`<button class="back" id="back">‹ All inspections</button>
    <div class="dh"><h2>${esc(j.addr)}, ${esc(j.key)}</h2><span class="meta">Permit <b>${j.permit}</b></span><span class="meta">Stop ${seq} of ${JOBS.length}</span></div>
    <div class="acts"><a class="dir" href="https://maps.apple.com/?daddr=${encodeURIComponent(j.addr+", "+j.key+", FL")}" target="_blank" rel="noopener">Directions</a><a class="dir alt" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(j.addr+", "+j.key+", FL")}" target="_blank" rel="noopener">Google Maps</a><span class="win big${j.urgent?" urgent":""}">${esc(j.win)}</span></div>
@@ -498,7 +498,11 @@ function render(){
     const win=d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" · "+(String(j.win).split(" · ").pop()||"Anytime");
     const{error}=await sb.from("inspections").update({scheduled_date:iso,time_window:win}).eq("id",j.id);if(error)return toast("Couldn't move it: "+error.message);
     toast("Moved to "+d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}));load()};
-  const dl=$("#delinsp"); if(dl)dl.onclick=async()=>{if(!confirm("Delete this inspection completely? Use this only for tests or mistakes. It can't be undone."))return;
+  const dl=$("#delinsp"); if(dl)dl.onclick=async()=>{
+    if(!j.code&&/^Next inspection/i.test(j.name||"")){if(!confirm(`Remove the job "${j.addr}" from your list?\n\nUse this for tests or jobs you're no longer on. Its past inspections stay on file.`))return;
+      const u=await sb.from("jobs").update({status:"removed"}).eq("id",j.jobId);if(u.error)return toast("Couldn't remove: "+u.error.message);
+      await sb.from("inspections").delete().eq("id",j.id);delete Q[j.id];cur=null;document.body.classList.remove("open");toast("Job removed from your list");load();return}
+    if(!confirm("Delete this inspection completely? Use this only for tests or mistakes. It can't be undone."))return;
     const id=j.id;const{error}=await sb.from("inspections").delete().eq("id",id);if(error)return toast("Couldn't delete: "+error.message);
     const left=(RAW.insp||[]).filter(x=>x.job_id===j.jobId&&x.id!==id&&!x.result&&!x.done_at);
     if(!left.length)await sb.from("inspections").insert({job_id:j.jobId,name:"Next inspection: not scheduled yet"});

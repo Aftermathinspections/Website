@@ -241,7 +241,7 @@ async function load(){
   if(c.error||!c.data.length){$("jobs").innerHTML=`<p class="empty">Your account isn't linked to any jobs yet. Please contact Aftermath Inspection Services.</p>`;return}
   ME=c.data[0];
   $("who").innerHTML=`${esc((ME.company||"CLIENT").toUpperCase())}<span>Client ID ${esc(ME.client_no||"")}</span>`;
-  const [j,i,r,ps,pp]=await Promise.all([sb.from("jobs").select("*").order("created_at"),sb.from("inspections").select("*"),sb.from("requests").select("*").eq("status","new").order("created_at"),sb.from("plan_sheets").select("id,job_id,idx,num,title,path").order("idx"),sb.from("photos").select("inspection_id,path").order("created_at")]);
+  const [j,i,r,ps,pp]=await Promise.all([sb.from("jobs").select("*").neq("status","removed").order("created_at"),sb.from("inspections").select("*"),sb.from("requests").select("*").eq("status","new").order("created_at"),sb.from("plan_sheets").select("id,job_id,idx,num,title,path").order("idx"),sb.from("photos").select("inspection_id,path").order("created_at")]);
   JOBS=j.data||[];INSP=i.data||[];REQS=r.data||[];SHEETS=(ps&&ps.data)||[];PHOTOS=(pp&&pp.data)||[];render();
 }
 const isPlaceholder=x=>!x.code&&!x.scheduled_date&&!x.result;
