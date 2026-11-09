@@ -35,6 +35,9 @@ h1{font-family:var(--display);font-size:24px;margin:8px 0 12px}
 .acts button{min-height:50px;font-family:var(--display);font-weight:700;font-size:14.5px;letter-spacing:.04em;cursor:pointer;border:1px solid var(--ink);background:#fff;color:var(--ink)}
 .acts .req{background:var(--maroon);border-color:var(--maroon);color:#fff}
 .acts .cx{color:var(--fail);border-color:var(--fail)}
+.cinfo{margin:0 16px 12px;padding:12px;background:#FFF6E0;border:1px solid #E8C979;display:grid;gap:8px;font-size:14.5px}.cinfo p{margin:0;color:var(--mute);font-size:13.5px}
+.cinfo label{display:grid;gap:4px;font-weight:600;font-size:13.5px}.cinfo input{font:inherit;font-size:16px;padding:10px;border:1px solid var(--line);background:#fff}
+.cinfo button{min-height:46px;background:var(--ink);color:#fff;border:0;font-family:var(--display);font-weight:700;cursor:pointer}
 details{border-top:1px solid var(--line)}
 summary{padding:12px 16px;cursor:pointer;font-weight:600;font-size:14.5px;color:var(--slate);list-style:none}
 summary::-webkit-details-marker{display:none}
@@ -299,11 +302,19 @@ function render(){renderPapers();const cu=$("certup");if(cu)cu.onchange=e=>{cons
       ${nx?`<div class="next">Next: <b>${esc([nx.code,nx.name].filter(Boolean).join(" "))}</b><br>${esc(nx.time_window||nice(nx.scheduled_date))}</div>`:`<div class="next none">Nothing scheduled right now.</div>`}
       ${pend.map(p=>`<div class="pend">Sent ${new Date(p.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}: ${esc(p.inspection.replace(/^(CANCEL|RESCHEDULE):\s*/,m=>m.startsWith("C")?"Cancel ":"Move "))}${p.requested_date?" for "+nice(p.requested_date):""}. Waiting for AIS to confirm.</div>`).join("")}
       <div class="acts"><button class="req" data-a="req" data-j="${jb.id}">Request</button><button data-a="rs" data-j="${jb.id}" ${open.length?"":"disabled style='opacity:.4'"}>Move</button><button class="cx" data-a="cx" data-j="${jb.id}" ${open.length?"":"disabled style='opacity:.4'"}>Cancel</button></div>
+      ${(jb.county||"Monroe")==="Monroe"&&(!jb.owner_name||!jb.parcel_re)?`<div class="cinfo"><b>Info for the county forms</b><p>AIS needs these for Monroe County paperwork on this permit.</p>
+        <label>Owner name<input data-own="${jb.id}" value="${esc(jb.owner_name||"")}" autocomplete="off"></label>
+        <label>Site RE # (parcel number)<input data-re="${jb.id}" value="${esc(jb.parcel_re||"")}" placeholder="e.g. 00123456-000100" autocomplete="off"></label>
+        <button data-cinfo="${jb.id}">Save</button></div>`:""}
       ${(()=>{const n=SHEETS.filter(x=>x.job_id===jb.id&&x.path).length;return n?`<button class="plansbtn" data-plans="${jb.id}">View plans (${n} sheet${n>1?"s":""})</button>`:""})()}
       ${done.length?`<details><summary>Inspection history (${done.length})</summary>${done.map(h=>`<div class="hrow"><span class="d">${esc(nice(h.done_at||h.scheduled_date))}</span><span>${esc([h.code,h.name].filter(Boolean).join(" "))}</span><span class="r ${h.result}">${RL[h.result]||esc(h.result)}</span>${h.result&&h.result!=="cancelled"?`<button class="vrep" data-rep="${h.id}">Report</button>`:""}</div>${(h.result==="fail"||h.result==="partial"||h.result==="corr")&&h.corrections?`<ol class="corrs">${h.corrections.split("\n").filter(x=>x.trim()).map(c=>`<li>${esc(c)}</li>`).join("")}</ol>`:""}`).join("")}</details>`:""}
     </div>`}).join("");
   document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>openForm(b.dataset.a,JOBS.find(j=>j.id===b.dataset.j)));
   document.querySelectorAll("[data-plans]").forEach(b=>b.onclick=()=>openPlans(b.dataset.plans));
+  document.querySelectorAll("[data-cinfo]").forEach(b=>b.onclick=async()=>{const id=b.dataset.cinfo,o=document.querySelector(`[data-own="${id}"]`).value.trim(),r=document.querySelector(`[data-re="${id}"]`).value.trim();
+    if(!o&&!r)return toast("Fill in at least one box.");b.disabled=true;b.textContent="Saving…";
+    const{error}=await sb.rpc("set_job_info",{p_job:id,p_owner:o,p_parcel:r});b.disabled=false;b.textContent="Save";
+    if(error)return toast("Couldn't save: "+error.message);const jb=JOBS.find(j=>j.id===id);if(jb){if(o)jb.owner_name=o;if(r)jb.parcel_re=r}toast("Saved. Thanks!");render()});
   document.querySelectorAll("[data-rep]").forEach(b=>b.onclick=()=>openReport(b.dataset.rep));
 }
 function codesFor(county){return CODES[county]||[]}
