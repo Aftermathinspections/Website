@@ -1,5 +1,5 @@
 // AIS Field: keeps the app itself available offline. Data and plans are handled by the page.
-const C="ais-client-shell-v2";
+const C="ais-client-shell-v3";
 const CDN=/^https:\/\/(cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com)\//;
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(["./","manifest.json","icon-180.png"]).catch(()=>{})))});
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));

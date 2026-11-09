@@ -229,7 +229,7 @@ textarea{min-height:84px}
     <li>Tap the <b>3 dots</b> <span class="ico" aria-hidden="true"><svg width="6" height="18" viewBox="0 0 6 18" fill="#1C1C1E"><circle cx="3" cy="3" r="1.7"/><circle cx="3" cy="9" r="1.7"/><circle cx="3" cy="15" r="1.7"/></svg></span> in the top right corner.</li>
     <li>Tap <b>Add to Home screen</b> (some phones say <b>Install app</b>).</li>
     <li>Tap <b>Add</b> or <b>Install</b>.</li></ol></div>
-  <p class="note">Your phone remembers your sign-in, so you won't need your PIN every time.</p>
+  <p class="note">The first time you open the AIS icon, sign in once more with the same Client ID and PIN. After that it stays signed in.</p>
   <button type="button" class="ok" id="instx">OK, GOT IT</button>
 </div></div>
 <div class="rv" id="rv" hidden role="dialog" aria-modal="true" aria-label="Inspection report"><div class="rvbox"><button class="close" id="rvclose" aria-label="Close report">×</button><div id="rvbody"></div></div></div>
@@ -446,6 +446,7 @@ $("ff").onsubmit=async e=>{e.preventDefault();$("ferr").textContent="";
 };
 
 async function boot(){
+  try{const q=new URLSearchParams(location.search).get("id");if(q&&/^\d{3,6}$/.test(q)){$("cid").value=q;try{localStorage.setItem("ais-cid",q)}catch(e){}}else{const r=localStorage.getItem("ais-cid");if(r)$("cid").value=r}}catch(e){}
   sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"ais-client-auth"}});
   $("lf").onsubmit=async e=>{e.preventDefault();$("lerr").textContent="";const id=$("cid").value.replace(/\D/g,""),pin=$("pin").value.trim();
     if(!id||!pin){$("lerr").textContent="Enter your Client ID and PIN.";return}
