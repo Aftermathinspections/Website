@@ -90,13 +90,13 @@
     </div></fieldset>
     <fieldset><legend>License &amp; insurance</legend><div class="grid">
       <div><label for="lic">Florida contractor license # <b class="req">*</b></label><input id="lic" autocapitalize="characters" required></div>
-      <div><label for="licexp">License expires <b class="req">*</b></label><input id="licexp" type="date" required></div>
-      <div><label for="glexp">Liability insurance expires <b class="req">*</b></label><input id="glexp" type="date" required></div>
+      <div><label for="licexp">License expires</label><input id="licexp" type="date" required></div>
+      <div><label for="glexp">Liability insurance expires</label><input id="glexp" type="date" required></div>
       <div><label for="wcexp">Workers' comp expires</label><input id="wcexp" type="date"><label class="check" style="font-weight:500;font-size:14px"><input id="wcx" type="checkbox"> I have a workers' comp exemption</label></div>
       <div class="full"><label>Insurance certificates <span>(photo or PDF: liability and workers' comp or exemption)</span></label>
         <label class="pickph">+ Add certificates<input type="file" id="docs" accept="image/*,application/pdf" multiple></label>
         <div class="files" id="files"></div>
-        <p style="font-size:13.5px;color:var(--mute);margin:8px 0 0">Ask your agent to list <b>Aftermath Inspection Services LLC, Summerland Key, FL 33042</b> as certificate holder.</p></div>
+        <p style="font-size:13.5px;color:var(--mute);margin:8px 0 0"><b style="color:var(--ink)">Don't have your certificates yet?</b> Skip this part and sign up now. You can send them any time from your AIS app.<br>Ask your agent to list <b>Aftermath Inspection Services LLC, Summerland Key, FL 33042</b> as certificate holder.</p></div>
     </div></fieldset>
     <fieldset><legend>Agreement</legend><div class="agree">
       <b>Working with AIS, in short:</b>
@@ -134,7 +134,7 @@
   $("docs").onchange=async e=>{for(const f of [...e.target.files]){if(DOCS.length>=8)break;const blob=await shrink(f);DOCS.push({name:f.name,blob,pdf:f.type==="application/pdf"})}e.target.value="";drawFiles()};
   $("wcx").onchange=()=>{$("wcexp").disabled=$("wcx").checked};
   $("f").addEventListener("submit",async e=>{e.preventDefault();const after=$("after");after.hidden=true;
-    const need=["company","name","cell","email","lic","licexp","glexp","sig"].filter(k=>!$(k).value.trim());
+    const need=["company","name","cell","email","lic","sig"].filter(k=>!$(k).value.trim());
     if(need.length){const el=$(need[0]);el.focus();el.setCustomValidity("Required");el.reportValidity();el.setCustomValidity("");return}
     if(!$("agree").checked){$("agree").focus();after.className="after bad";after.innerHTML="<b>Please check the box to agree</b> to the service agreement.";after.hidden=false;return}
     const btn=$("sendbtn");btn.disabled=true;btn.textContent="SENDING…";

@@ -252,11 +252,19 @@ function papers(){if(!ME)return[];const now=new Date();
     return{k,sub,d,days,cls:days<0?"bad":days<=30?"warn":"ok",txt:days<0?"Expired "+nice2:days<=30?"Expires "+nice2+" ("+days+(days===1?" day":" days")+")":"Current through "+nice2}})}
 function renderPapers(){const P=papers(),el=$("papers");if(!P.length){el.hidden=true;return}el.hidden=false;
   el.innerHTML=`<h2>Your license &amp; insurance on file</h2>${P.map(x=>`<div class="prow2"><span class="k">${esc(x.k)}${x.sub?`<small>${esc(x.sub)}</small>`:""}</span><span class="pill ${x.cls}">${esc(x.txt)}</span></div>`).join("")}
-  <p class="papnote">${P.some(x=>x.cls==="bad"||x.cls==="warn")?"Please send Aftermath Inspection Services your updated certificate or license so your inspections keep moving.":P.some(x=>x.cls==="none")?"Missing something? Send it to Aftermath Inspection Services and we'll add it.":"Everything is current. Thank you."}</p>`}
+  <label class="pickph" style="margin-top:10px">+ Send a certificate or license<input type="file" id="certup" accept="image/*,application/pdf" multiple></label>
+  <p class="papnote">${P.some(x=>x.cls==="bad"||x.cls==="warn")?"Tap the button above to send your updated certificate or license so your inspections keep moving.":P.some(x=>x.cls==="none")?"Missing something? Tap the button above to send it any time. We'll add it.":"Everything is current. Thank you."}</p>`}
+async function sendCerts(files){let n=0;
+  for(const f of files){try{const pdf=f.type==="application/pdf";const blob=pdf?f:await shrink(f,2200);
+    const path=`certs/${ME.id}/${Date.now()}-${Math.random().toString(36).slice(2,6)}.${pdf?"pdf":"jpg"}`;
+    const up=await sb.storage.from("files").upload(path,blob,{contentType:pdf?"application/pdf":"image/jpeg"});if(up.error)throw up.error;
+    const ins=await sb.from("client_docs").insert({client_id:ME.id,path,kind:"certificate"});if(ins.error)throw ins.error;n++}catch(e){console.warn(e)}}
+  if(n){toast(n>1?n+" files sent to AIS. Thank you.":"Sent to AIS. Thank you.");try{fetch(NTFY,{method:"POST",headers:{"Title":"New certificate","Tags":"page_facing_up"},body:(ME.company||"A contractor")+" sent "+n+" file"+(n>1?"s":"")+". Check Office."})}catch(e){}}
+  else toast("Couldn't send that. Check your signal and try again.")}
 function paperWarn(){const P=papers().filter(x=>x.cls==="bad"||x.cls==="warn"),el=$("fpaper");if(!P.length){el.hidden=true;return}
   el.hidden=false;el.className="papwarn"+(P.some(x=>x.cls==="bad")?" bad":"");
   el.innerHTML=`<b>Heads up:</b> ${P.map(x=>esc(x.k.toLowerCase())+" "+(x.cls==="bad"?"expired":"expires")+" "+esc(new Date(x.d+"T12:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}))).join("; ")}. Please send AIS your updated paperwork.`}
-function render(){renderPapers();
+function render(){renderPapers();const cu=$("certup");if(cu)cu.onchange=e=>{const fs=[...e.target.files];e.target.value="";if(fs.length)sendCerts(fs)};
   if(!JOBS.length){$("jobs").innerHTML=`<p class="empty">No jobs on file yet. Use the button below to request your first inspection.</p>`;return}
   $("jobs").innerHTML=JOBS.map(jb=>{
     const mine=INSP.filter(x=>x.job_id===jb.id);
