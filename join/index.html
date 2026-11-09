@@ -127,6 +127,10 @@
 <script>
   const SB_URL="https://lfihnfgrkrxdxzmeuyph.supabase.co", SB_KEY="sb_publishable_ewvQxbyA7lEuC0tTfZZfvg_LtAm5TGd", NTFY="https://ntfy.sh/ais-req-5ba423ff27aa";
   const $=id=>document.getElementById(id);let DOCS=[];
+  // Pre-fill from a personal sign-up link, e.g. /join/?company=Galvez%20Plumbing&trade=plumbing&name=George&cell=305...&email=...
+  try{const q=new URLSearchParams(location.search);
+    for(const k of ["company","name","cell","email","lic","addr","cphone"]){const v=q.get(k);if(v&&$(k))$(k).value=v.slice(0,120)}
+    const t=(q.get("trade")||"").toLowerCase();if(t){const o=[...$("trade").options].find(o=>o.text.toLowerCase().startsWith(t));if(o)$("trade").value=o.value||o.text}}catch(e){}
   const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   function shrink(file,max=2200){if(!/^image\//.test(file.type))return Promise.resolve(file);return new Promise(res=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),"image/jpeg",.85)};im.onerror=()=>res(file);im.src=u})}
   function drawFiles(){$("files").innerHTML=DOCS.map((d,i)=>`<span>${esc(d.name)} <button type="button" data-rm="${i}" aria-label="Remove ${esc(d.name)}" style="float:right;border:0;background:none;color:#A3262A;font-weight:700;cursor:pointer">Remove</button></span>`).join("");
