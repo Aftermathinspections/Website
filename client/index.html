@@ -46,9 +46,17 @@ summary::before{content:"▸ ";}details[open] summary::before{content:"▾ "}
 .corrs{margin:0 16px 8px 88px;padding-left:18px;font-size:14px;color:#3A3C42}
 .newjob{width:100%;min-height:52px;border:2px dashed var(--slate);background:transparent;font-weight:700;font-size:15px;color:var(--slate);cursor:pointer;margin-top:4px}
 .empty{color:var(--mute);background:#fff;border:1px solid var(--line);padding:16px}
-.install{background:#fff;border:1px solid var(--line);padding:14px 16px;margin-bottom:14px;font-size:14px;position:relative}
-.install b{font-family:var(--display)}.install p{margin:6px 0 0}
-.install .x{position:absolute;top:6px;right:8px;background:none;border:0;font-size:22px;cursor:pointer;min-width:44px;min-height:44px}
+.inst[hidden]{display:none}
+.inst{position:fixed;inset:0;z-index:60;background:rgba(20,20,20,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+.instbox{background:#fff;max-width:420px;width:100%;max-height:92vh;overflow:auto;padding:22px 20px 18px;font-size:16px;line-height:1.45}
+.instbox h2{font-family:var(--display);font-size:22px;margin:0 0 6px}.instbox .sub{color:var(--mute);margin:0 0 14px;font-size:15px}
+.instbox ol{margin:0 0 14px;padding-left:22px}.instbox li{margin:0 0 10px}.instbox li b{font-family:var(--display)}
+.instbox .ico{display:inline-flex;vertical-align:-5px;border:1px solid var(--line);padding:2px 4px;background:#F4F3F0}
+.instbox .note{font-size:14px;color:var(--mute);background:#F4F3F0;padding:10px 12px;margin:0 0 14px}
+.instbox .ok{width:100%;min-height:52px;background:var(--maroon);color:#fff;border:0;font-family:var(--display);font-weight:800;font-size:16px;letter-spacing:.04em;cursor:pointer}
+.instbox .tabs{display:flex;gap:8px;margin:0 0 12px}.instbox .tabs button{flex:1;min-height:44px;border:1px solid var(--ink);background:#fff;font-family:var(--display);font-weight:700;cursor:pointer}
+.instbox .tabs button[aria-pressed=true]{background:var(--ink);color:#fff}
+.howlink{display:block;margin:18px auto 0;background:none;border:0;color:var(--maroon);text-decoration:underline;font:inherit;font-size:14px;min-height:44px;cursor:pointer}
 /* login */
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .login[hidden]{display:none}
@@ -170,13 +178,11 @@ textarea{min-height:84px}
 <div id="app" hidden>
   <header class="top"><span class="mark">AIS</span><div class="who" id="who">CLIENT<span></span></div><button id="out">Sign out</button></header>
   <div class="wrap">
-    <div class="install" id="install" hidden><button class="x" id="instx" aria-label="Close">×</button>
-      <b>Put AIS on your home screen</b>
-      <p><b>iPhone:</b> tap Share, then Add to Home Screen.<br><b>Android:</b> tap ⋮ (top right), then Add to Home screen or Install app.</p></div>
     <div class="papers" id="papers" hidden></div>
     <h1>Your jobs</h1>
     <div id="jobs"><p class="hint">Loading…</p></div>
     <button class="newjob" id="newjob">＋ Request an inspection on a new job</button>
+    <button type="button" class="howlink" id="howbtn">How to put AIS on your home screen</button>
   </div>
 </div>
 
@@ -209,6 +215,23 @@ textarea{min-height:84px}
   </form>
 </div></div>
 <div class="toast" id="toast" hidden></div>
+<div class="inst" id="install" hidden role="dialog" aria-modal="true" aria-labelledby="insth"><div class="instbox">
+  <h2 id="insth">Put AIS on your home screen</h2>
+  <p class="sub">One time only. After this, you just tap the AIS icon like any other app.</p>
+  <div class="tabs"><button type="button" id="tabI" aria-pressed="true">iPhone</button><button type="button" id="tabA" aria-pressed="false">Android</button></div>
+  <div id="stI"><ol>
+    <li>Make sure this page is open in <b>Safari</b>. (If you opened it from email, tap the compass or "Open in Safari" first.)</li>
+    <li>Tap the <b>Share</b> button <span class="ico" aria-hidden="true"><svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="#1C1C1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V1M4.5 4.5 8 1l3.5 3.5M3 7.5H1.5v9h13v-9H13"/></svg></span> at the bottom of the screen (on iPad it's at the top).</li>
+    <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+    <li>Tap <b>Add</b> in the top right corner.</li></ol></div>
+  <div id="stA" hidden><ol>
+    <li>Make sure this page is open in <b>Chrome</b>.</li>
+    <li>Tap the <b>3 dots</b> <span class="ico" aria-hidden="true"><svg width="6" height="18" viewBox="0 0 6 18" fill="#1C1C1E"><circle cx="3" cy="3" r="1.7"/><circle cx="3" cy="9" r="1.7"/><circle cx="3" cy="15" r="1.7"/></svg></span> in the top right corner.</li>
+    <li>Tap <b>Add to Home screen</b> (some phones say <b>Install app</b>).</li>
+    <li>Tap <b>Add</b> or <b>Install</b>.</li></ol></div>
+  <p class="note">Your phone remembers your sign-in, so you won't need your PIN every time.</p>
+  <button type="button" class="ok" id="instx">OK, GOT IT</button>
+</div></div>
 <div class="rv" id="rv" hidden role="dialog" aria-modal="true" aria-label="Inspection report"><div class="rvbox"><button class="close" id="rvclose" aria-label="Close report">×</button><div id="rvbody"></div></div></div>
 <div class="pv" id="pv" hidden role="dialog" aria-modal="true" aria-label="Plans">
   <div class="pvbar"><button id="pvclose" aria-label="Close plans">×</button><div class="t" id="pvtitle">Plans</div><button class="cmpt" id="pvcmp" aria-pressed="false">Compare</button></div>
@@ -437,8 +460,12 @@ async function boot(){
 }
 function show(inApp){$("login").hidden=inApp;$("app").hidden=!inApp;if(inApp){
   let seen=false;try{seen=localStorage.getItem("ais-inst")==="1"}catch(e){}
-  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;$("install").hidden=seen||standalone;load()}}
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;$("howbtn").hidden=standalone;if(!seen&&!standalone)instOpen();else $("install").hidden=true;load()}else $("install").hidden=true}
+function instTab(a){$("tabI").setAttribute("aria-pressed",String(!a));$("tabA").setAttribute("aria-pressed",String(a));$("stI").hidden=a;$("stA").hidden=!a}
+function instOpen(){instTab(/android/i.test(navigator.userAgent));$("install").hidden=false;$("instx").focus()}
+$("tabI").onclick=()=>instTab(false);$("tabA").onclick=()=>instTab(true);
 $("instx").onclick=()=>{$("install").hidden=true;try{localStorage.setItem("ais-inst","1")}catch(e){}};
+$("howbtn").onclick=instOpen;
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&ME)load()});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" onload="boot()"></script>

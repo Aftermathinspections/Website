@@ -830,7 +830,7 @@ function renderOffice(){const el=$("#office");if(!el||!document.body.classList.c
     ag.disabled=true;ag.textContent="Creating…";const x=SIGNUPS.find(y=>y.id===APV);
     const{data,error}=await sb.rpc("approve_intake",{p_intake:APV,p_pin:pin});
     if(error){ag.disabled=false;ag.textContent="Create login";return toast("Couldn't create the login: "+error.message)}
-    DONE1={company:x.company,no:data,pin,cell:(x.contact_cell||"").replace(/[^0-9+]/g,""),msg:`Welcome to Aftermath Inspection Services! Your AIS app: aftermathinspections.com/client  Client ID: ${data}  PIN: ${pin}  Sign in, then tap Share and Add to Home Screen. Questions? Call or text 305-900-7529.`};
+    DONE1={company:x.company,no:data,pin,cell:(x.contact_cell||"").replace(/[^0-9+]/g,""),msg:`Welcome to Aftermath Inspection Services!\nYour AIS app: aftermathinspections.com/client\nClient ID: ${data}  PIN: ${pin}\n\nPut it on your phone (one time):\niPhone: open the link in Safari, sign in, tap the Share button (square with the arrow), then "Add to Home Screen."\nAndroid: open the link in Chrome, sign in, tap the 3 dots at the top, then "Add to Home screen."\n\nAfter that, just tap the AIS icon on your home screen.\nQuestions? Call or text 305-900-7529.`};
     SIGNUPS=SIGNUPS.filter(y=>y.id!==APV);APV=null;
     try{const r=await sb.from("clients").select("*").order("client_no");if(!r.error)CLIENTS=r.data||[]}catch(e){}
     renderOffice()};
